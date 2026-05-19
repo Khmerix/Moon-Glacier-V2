@@ -692,3 +692,238 @@ body::after {
     }
     .panel-box { flex: 1; }
 }
+
+/* ===== CANVAS STARFIELD ===== */
+#starfield-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Remove old CSS starfield - canvas replaces it */
+body::after { display: none; }
+
+/* ===== CRT SCANLINES ===== */
+#scanlines {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.15) 2px,
+        rgba(0,0,0,0.15) 4px
+    );
+    opacity: 0.35;
+}
+
+/* ===== FILM NOISE ===== */
+#noise {
+    position: fixed;
+    inset: 0;
+    z-index: 9997;
+    pointer-events: none;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: noise 0.5s steps(5) infinite;
+}
+
+@keyframes noise {
+    0% { transform: translate(0,0); }
+    20% { transform: translate(-2%,-2%); }
+    40% { transform: translate(2%,2%); }
+    60% { transform: translate(-1%,1%); }
+    80% { transform: translate(1%,-1%); }
+    100% { transform: translate(0,0); }
+}
+
+/* ===== CHROMATIC ABERRATION ===== */
+#chromatic {
+    position: fixed;
+    inset: 0;
+    z-index: 9996;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 3s ease;
+    box-shadow: inset 0 0 100px rgba(255,0,100,0.08), inset 0 0 100px rgba(0,255,255,0.08);
+}
+
+#chromatic.active {
+    opacity: 1;
+    animation: chromatic-pulse 4s ease-in-out infinite;
+}
+
+@keyframes chromatic-pulse {
+    0%, 100% { box-shadow: inset 0 0 80px rgba(255,0,100,0.06), inset 0 0 80px rgba(0,255,255,0.06); }
+    50% { box-shadow: inset 0 0 120px rgba(255,0,100,0.12), inset 0 0 120px rgba(0,255,255,0.12); }
+}
+
+/* ===== GLITCH TEXT ===== */
+.glitch-text {
+    position: relative;
+    animation: glitch-skew 3s infinite;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+}
+
+.glitch-text::before {
+    left: 2px;
+    text-shadow: -2px 0 #ff00c1;
+    clip: rect(24px, 550px, 90px, 0);
+    animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+}
+
+.glitch-text::after {
+    left: -2px;
+    text-shadow: -2px 0 #00fff9;
+    clip: rect(85px, 550px, 140px, 0);
+    animation: glitch-anim-2 3s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim-1 {
+    0% { clip: rect(20px, 9999px, 15px, 0); }
+    20% { clip: rect(60px, 9999px, 70px, 0); }
+    40% { clip: rect(20px, 9999px, 50px, 0); }
+    60% { clip: rect(10px, 9999px, 80px, 0); }
+    80% { clip: rect(50px, 9999px, 20px, 0); }
+    100% { clip: rect(70px, 9999px, 60px, 0); }
+}
+
+@keyframes glitch-anim-2 {
+    0% { clip: rect(10px, 9999px, 80px, 0); }
+    20% { clip: rect(80px, 9999px, 10px, 0); }
+    40% { clip: rect(30px, 9999px, 50px, 0); }
+    60% { clip: rect(60px, 9999px, 90px, 0); }
+    80% { clip: rect(15px, 9999px, 60px, 0); }
+    100% { clip: rect(50px, 9999px, 30px, 0); }
+}
+
+@keyframes glitch-skew {
+    0% { transform: skew(0deg); }
+    10% { transform: skew(-2deg); }
+    20% { transform: skew(2deg); }
+    30% { transform: skew(0deg); }
+    100% { transform: skew(0deg); }
+}
+
+/* ===== ENTITY DIALOGUE GLITCH ===== */
+.entity-dialogue .dialogue-text {
+    animation: entity-flicker 2s infinite;
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+@keyframes entity-flicker {
+    0%, 100% { opacity: 1; }
+    5% { opacity: 0.8; }
+    10% { opacity: 1; }
+    15% { opacity: 0.9; }
+    20% { opacity: 1; }
+    50% { opacity: 0.95; }
+    52% { opacity: 0.7; }
+    54% { opacity: 0.95; }
+}
+
+/* ===== ORGANIC BREATHING BORDERS ===== */
+@keyframes border-breathe {
+    0%, 100% { box-shadow: 0 0 20px var(--glass-glow), inset 0 0 20px rgba(0,212,255,0.02); border-color: var(--glass-border); }
+    50% { box-shadow: 0 0 40px var(--glass-glow), inset 0 0 30px rgba(0,212,255,0.06); border-color: rgba(0,212,255,0.35); }
+}
+
+.panel-box {
+    animation: border-breathe 4s ease-in-out infinite;
+}
+
+/* ===== HOLOGRAPHIC TILT ===== */
+.image-frame {
+    transform-style: preserve-3d;
+    transition: transform 0.3s ease;
+}
+
+/* ===== DECRYPTION EFFECT ===== */
+.decrypting {
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+}
+
+/* ===== CHAPTER THEMES ===== */
+.theme-ice {
+    --ice-primary: #00d4ff;
+    --ice-secondary: #7fdbff;
+    --glass-border: rgba(0, 212, 255, 0.2);
+    --glass-glow: rgba(0, 212, 255, 0.08);
+}
+
+.theme-silence {
+    --ice-primary: #ff4757;
+    --ice-secondary: #ff6b81;
+    --glass-border: rgba(255, 71, 87, 0.25);
+    --glass-glow: rgba(255, 71, 87, 0.1);
+}
+
+.theme-deep {
+    --ice-primary: #ffa502;
+    --ice-secondary: #ffc048;
+    --glass-border: rgba(255, 165, 2, 0.25);
+    --glass-glow: rgba(255, 165, 2, 0.1);
+}
+
+.theme-contact {
+    --ice-primary: #a55eea;
+    --ice-secondary: #d6a2e8;
+    --glass-border: rgba(165, 94, 234, 0.3);
+    --glass-glow: rgba(165, 94, 234, 0.12);
+}
+
+.theme-awakening {
+    --ice-primary: #00d4ff;
+    --ice-secondary: #ffd700;
+    --glass-border: rgba(0, 212, 255, 0.25);
+    --glass-glow: rgba(255, 215, 0, 0.15);
+}
+
+.theme-contact #chromatic,
+.theme-awakening #chromatic {
+    opacity: 1;
+}
+
+/* ===== AMBIENT BACKGROUND SHIFT ===== */
+.theme-silence body::before {
+    background: radial-gradient(ellipse at bottom, #2a0a0a 0%, #050a14 100%);
+}
+
+.theme-deep body::before {
+    background: radial-gradient(ellipse at bottom, #2a1a00 0%, #050a14 100%);
+}
+
+.theme-contact body::before {
+    background: radial-gradient(ellipse at bottom, #1a0a2a 0%, #050a14 100%);
+}
+
+.theme-awakening body::before {
+    background: radial-gradient(ellipse at bottom, #0a1a2a 0%, #050a14 100%);
+}
+
+/* ===== SCROLLBAR THEMING ===== */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--ice-dim);
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--ice-primary);
+}

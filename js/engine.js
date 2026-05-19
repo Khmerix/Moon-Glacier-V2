@@ -10,6 +10,15 @@ const GlacierEngine = (function() {
     let chapterCache = {}; // Cache parsed chapters
     let characters = {};
 
+    // Chapter themes
+    const CHAPTER_THEMES = {
+        'ch1-ice-frontier': 'theme-ice',
+        'ch2-cold-silence': 'theme-silence',
+        'ch3-deep-vein': 'theme-deep',
+        'ch4-first-contact': 'theme-contact',
+        'ch5-awakening': 'theme-awakening'
+    };
+
     // Character definitions (loaded from lore/characters.md or hardcoded fallback)
     const CHARACTERS = {
         kael: { name: "Kael Vance", color: "#00f0ff", avatar: "visuals/chars/kael.png", bio: "Commander" },
@@ -39,8 +48,88 @@ const GlacierEngine = (function() {
         document.getElementById('btn-close-menu').addEventListener('click', toggleMenu);
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleMenu(); });
 
+        initStarfield();
+        initHolographicTilt();
+
         // Load first chapter
         loadAndRender(GlacierState.get().currentChapter);
+    }
+
+    function applyTheme(chapterId) {
+        const themeClass = CHAPTER_THEMES[chapterId] || 'theme-ice';
+        document.body.className = themeClass;
+        const chromatic = document.getElementById('chromatic');
+        if (chromatic) {
+            chromatic.classList.toggle('active', themeClass === 'theme-contact' || themeClass === 'theme-awakening');
+        }
+    }
+
+    function initStarfield() {
+        const canvas = document.getElementById('starfield-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        const numStars = 250;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function init() {
+            stars = [];
+            for (let i = 0; i < numStars; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.3,
+                    speed: Math.random() * 0.3 + 0.05,
+                    opacity: Math.random() * 0.6 + 0.2,
+                    twinkleSpeed: Math.random() * 0.02 + 0.005,
+                    twinkleOffset: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const time = Date.now() * 0.001;
+
+            stars.forEach(star => {
+                const twinkle = Math.sin(time * star.twinkleSpeed * 10 + star.twinkleOffset) * 0.3 + 0.7;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity * twinkle})`;
+                ctx.fill();
+
+                star.y -= star.speed;
+                if (star.y < -5) {
+                    star.y = canvas.height + 5;
+                    star.x = Math.random() * canvas.width;
+                }
+            });
+
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('resize', () => { resize(); init(); });
+        resize();
+        init();
+        draw();
+    }
+
+    function initHolographicTilt() {
+        const frame = document.querySelector('.image-frame');
+        if (!frame) return;
+        frame.addEventListener('mousemove', (e) => {
+            const rect = frame.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width - 0.5;
+            const y = (e.clientY - rect.top) / rect.height - 0.5;
+            frame.style.transform = `perspective(1000px) rotateY(${x * 8}deg) rotateX(${-y * 8}deg) scale(1.02)`;
+        });
+        frame.addEventListener('mouseleave', () => {
+            frame.style.transform = 'perspective(1000px) rotateY(0) rotateX(0) scale(1)';
+        });
     }
 
     async function loadAndRender(chapterId) {
@@ -77,6 +166,9 @@ const GlacierEngine = (function() {
         clearTypewriter();
         dom.storyContent.innerHTML = '';
         dom.choicesContainer.innerHTML = '';
+
+        // Theme
+        applyTheme(chapter.id);
 
         // Header
         dom.chapterTitle.textContent = chapter.title || 'Unknown Chapter';
@@ -131,22 +223,24 @@ const GlacierEngine = (function() {
                 ? `<img class="char-avatar" src="${charData.avatar}" alt="${charData.name}" onerror="this.style.display='none'">`
                 : `<div class="char-avatar" style="background:linear-gradient(135deg,${charData.color},#1e293b);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;text-shadow:0 0 4px rgba(0,0,0,0.5);">${charData.name.charAt(0)}</div>`;
             const speakBtn = typeof window.speakDialogue === 'function' ? `<button class="speak-btn" onclick="window.speakDialogue('${block.text.replace(/'/g, "\\'")}', this)" title="Read aloud">&#9654;</button>` : '';
+            const isEntity = block.char === 'entity';
+            if (isEntity) el.classList.add('entity-dialogue');
             el.innerHTML = `
                 <div class="dialogue-header" style="--char-color: ${charData.color}">
                     ${avatarImg}
                     <span class="char-name">${charData.name}${speakBtn}</span>
                     ${block.emotion ? `<span class="emotion-tag">${block.emotion}</span>` : ''}
                 </div>
-                <div class="dialogue-text"></div>
+                <div class="dialogue-text ${isEntity ? 'glitch-text' : ''}" ${isEntity ? `data-text="${escapeHtml(block.text)}"` : ''}></div>
             `;
             dom.storyContent.appendChild(el);
-            typewrite(el.querySelector('.dialogue-text'), block.text, () => {
+            decryptTypewrite(el.querySelector('.dialogue-text'), block.text, () => {
                 setTimeout(() => renderContentBlocks(blocks, index + 1), 400);
             });
         } else if (block.type === 'narration') {
             el.innerHTML = `<div class="narration-text"></div>`;
             dom.storyContent.appendChild(el);
-            typewrite(el.querySelector('.narration-text'), block.text, () => {
+            decryptTypewrite(el.querySelector('.narration-text'), block.text, () => {
                 setTimeout(() => renderContentBlocks(blocks, index + 1), 300);
             });
         } else {
@@ -158,22 +252,36 @@ const GlacierEngine = (function() {
         dom.storyContent.scrollTop = dom.storyContent.scrollHeight;
     }
 
-    function typewrite(element, text, callback) {
+    function decryptTypewrite(element, text, callback) {
         clearTypewriter();
-        let i = 0;
-        element.textContent = '';
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+        let resolved = 0;
+        const total = text.length;
+        const speed = 22;
 
+        element.classList.add('decrypting');
         typewriterInterval = setInterval(() => {
-            element.textContent += text.charAt(i);
-            i++;
+            element.textContent = text.split('').map((char, index) => {
+                if (char === ' ' || char === '\n' || char === '!' || char === '.' || char === ',' || char === '"' || char === "'") {
+                    if (index < resolved) return char;
+                    return char;
+                }
+                if (index < resolved) return char;
+                return chars[Math.floor(Math.random() * chars.length)];
+            }).join('');
+
             dom.storyContent.scrollTop = dom.storyContent.scrollHeight;
 
-            if (i >= text.length) {
+            if (Math.random() > 0.35) resolved++;
+
+            if (resolved >= total) {
+                element.textContent = text;
+                element.classList.remove('decrypting');
                 clearInterval(typewriterInterval);
                 typewriterInterval = null;
                 if (callback) callback();
             }
-        }, 18);
+        }, speed);
     }
 
     function clearTypewriter() {
