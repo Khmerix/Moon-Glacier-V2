@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glacier Moon Outpost — Interactive Story</title>
+<link rel="stylesheet" href="css/glacier.css">
+<style>
+  /* Audio toggle button */
+  #audio-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 50;
+    padding: 8px 14px;
+    background: rgba(5, 10, 20, 0.88);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: #8ab4c7;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    font-family: 'Courier New', monospace;
+  }
+  #audio-toggle:hover { border-color: #00d4ff; color: #00d4ff; }
+  .sound-wave { display: flex; gap: 2px; align-items: center; height: 14px; }
+  .sound-wave span { width: 2px; background: currentColor; border-radius: 1px; animation: wave 1s infinite ease-in-out; }
+  .sound-wave span:nth-child(1) { height: 6px; animation-delay: 0s; }
+  .sound-wave span:nth-child(2) { height: 10px; animation-delay: 0.2s; }
+  .sound-wave span:nth-child(3) { height: 14px; animation-delay: 0.4s; }
+  .sound-wave span:nth-child(4) { height: 10px; animation-delay: 0.6s; }
+  @keyframes wave { 0%,100% { transform: scaleY(0.6); opacity: 0.4; } 50% { transform: scaleY(1); opacity: 1; } }
+  .sound-wave.paused span { animation-play-state: paused; opacity: 0.3; }
+
+  /* TTS button in dialogue */
+  .speak-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid var(--char-color, #00d4ff);
+    background: transparent;
+    color: var(--char-color, #00d4ff);
+    cursor: pointer;
+    font-size: 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-left: 8px;
+  }
+  .speak-btn:hover { background: var(--char-color, #00d4ff); color: #050a14; }
+  .speak-btn.speaking { background: var(--char-color, #00d4ff); color: #050a14; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+</style>
+</head>
+<body>
+
+<div id="glacier-app">
+  <!-- Header -->
+  <header class="app-header">
+    <div class="logo">
+      <div class="logo-icon">&#9790;</div>
+      <div class="logo-text">GLACIER MOON</div>
+    </div>
+    <div class="header-meta">
+      <span id="play-time">00:00</span>
+      <button id="btn-menu" class="btn-icon" title="Menu">&#9776;</button>
+    </div>
+  </header>
+
+  <!-- Left Panel: Chapter Info -->
+  <aside class="left-panel">
+    <div class="panel-box chapter-info">
+      <div class="panel-title">Mission Log</div>
+      <h2 id="chapter-title">Connecting...</h2>
+      <div id="location-time">--</div>
+    </div>
+    <div class="panel-box">
+      <div class="panel-title">Navigation</div>
+      <div style="font-size:0.8rem;color:var(--text-secondary);opacity:0.7">
+        Use the menu to save, load, or reset your timeline.
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Story Area -->
+  <main class="main-panel">
+    <div class="image-frame">
+      <img id="chapter-image" src="" alt="Chapter scene">
+    </div>
+    <div class="story-scroll" id="story-content">
+      <div class="content-block narration">
+        <div class="narration-text">Establishing connection to GL-7 outpost...</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Right Panel: Stats & Inventory -->
+  <aside class="right-panel">
+    <div class="panel-box">
+      <div class="panel-title">Crew Status</div>
+      <div id="stats-panel"><span class="empty-hud">Awaiting telemetry...</span></div>
+    </div>
+    <div class="panel-box">
+      <div class="panel-title">Inventory</div>
+      <div id="inventory-panel"><span class="empty-hud">Empty</span></div>
+    </div>
+  </aside>
+
+  <!-- Choices -->
+  <div class="choices-area" id="choices-container">
+    <button class="choice-btn continue-btn" onclick="location.reload()">
+      <span class="choice-text">&#8635; Retry Connection</span>
+    </button>
+  </div>
+</div>
+
+<!-- Save Indicator -->
+<div id="save-indicator">Auto-saved</div>
+
+<!-- Menu Overlay -->
+<div id="menu-overlay" class="menu-overlay">
+  <div class="menu-box">
+    <button id="btn-close-menu" class="menu-close">&times;</button>
+    <h2>SYSTEM MENU</h2>
+    <button id="btn-save" class="menu-btn">&#128190; Export Save Code</button>
+    <button id="btn-load" class="menu-btn">&#128194; Import Save Code</button>
+    <button id="btn-reset" class="menu-btn danger">&#9851; Reset Timeline</button>
+  </div>
+</div>
+
+<!-- Ambient Audio Toggle -->
+<div id="audio-toggle" onclick="toggleAmbient()">
+  <div class="sound-wave paused" id="wave-icon"><span></span><span></span><span></span><span></span></div>
+  <span id="audio-label">Ambient Off</span>
+</div>
+
+<!-- Scripts -->
+<script src="js/state.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/engine.js"></script>
+
+<script>
+// ================= AMBIENT AUDIO (Web Audio API) =================
+let ambientEnabled = false;
+let ambientCtx = null;
+let ambientOsc = null;
+let ambientGain = null;
+
+function toggleAmbient() {
+  if (!ambientEnabled) {
+    startAmbient();
+  } else {
+    stopAmbient();
+  }
+}
+
+function startAmbient() {
+  if (!window.AudioContext && !window.webkitAudioContext) {
+    console.warn("Web Audio not supported");
+    return;
+  }
+  ambientCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  const freqs = [55, 110, 165];
+  ambientGain = ambientCtx.createGain();
+  ambientGain.gain.value = 0.08;
+  ambientGain.connect(ambientCtx.destination);
+
+  ambientOsc = freqs.map(f => {
+    const osc = ambientCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = f;
+    const gain = ambientCtx.createGain();
+    gain.gain.value = 0.3;
+    osc.connect(gain);
+    gain.connect(ambientGain);
+    osc.start();
+    const lfo = ambientCtx.createOscillator();
+    lfo.frequency.value = 0.1 + Math.random() * 0.2;
+    const lfoGain = ambientCtx.createGain();
+    lfoGain.gain.value = 2;
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+    lfo.start();
+    return { osc, gain, lfo, lfoGain };
+  });
+
+  ambientEnabled = true;
+  document.getElementById('audio-label').textContent = 'Ambient On';
+  document.getElementById('wave-icon').classList.remove('paused');
+}
+
+function stopAmbient() {
+  if (ambientOsc) {
+    ambientOsc.forEach(o => { o.osc.stop(); o.lfo.stop(); });
+    ambientOsc = null;
+  }
+  if (ambientCtx) {
+    ambientCtx.close();
+    ambientCtx = null;
+  }
+  ambientEnabled = false;
+  document.getElementById('audio-label').textContent = 'Ambient Off';
+  document.getElementById('wave-icon').classList.add('paused');
+}
+
+// ================= TTS =================
+function speakDialogue(text, btn) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 0.9;
+  utter.pitch = 0.95;
+  utter.volume = 1;
+
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Daniel'));
+  if (preferred) utter.voice = preferred;
+
+  if (btn) {
+    btn.classList.add('speaking');
+    utter.onend = () => btn.classList.remove('speaking');
+    utter.onerror = () => btn.classList.remove('speaking');
+  }
+  window.speechSynthesis.speak(utter);
+}
+
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,5042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glacier Moon Outpost — Interactive Story</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@300;500;700;900&family=Rajdhani:wght@300;500;700&family=Share+Tech+Mono&display=swap');
+  :root {
+    --ice-deep: #050d1a;
+    --ice-mid: #0a1628;
+    --neon-cyan: #00e5ff;
+    --neon-amber: #ffb300;
+    --neon-red: #ff3366;
+    --glass: rgba(10, 22, 40, 0.75);
+    --glass-border: rgba(0, 229, 255, 0.15);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    background: var(--ice-deep);
+    color: #e0f7fa;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+  .crt-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+    opacity: 0.4;
+  }
+  .vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(3,8,16,0.7) 100%);
+  }
+  #game-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+  }
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    background: linear-gradient(180deg, rgba(5,13,26,0.95), rgba(5,13,26,0.7));
+    border-bottom: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+  .hud-left, .hud-right {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+  .hud-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hud-stat .label {
+    color: rgba(224, 247, 250, 0.4);
+  }
+  .hud-stat .value {
+    color: var(--neon-cyan);
+    font-weight: 700;
+  }
+  .hud-stat .value.warning {
+    color: var(--neon-red);
+    animation: blink 1s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .hud-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--neon-amber);
+  }
+  .main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+  .scene-viewport {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  .scene-image {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    transition: opacity 1s ease;
+  }
+  .scene-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.5) contrast(1.2) saturate(0.8);
+    transition: all 0.8s ease;
+  }
+  .scene-image.active img {
+    filter: brightness(0.65) contrast(1.25) saturate(0.9);
+  }
+  .scene-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(5,13,26,0.3) 0%, rgba(5,13,26,0.1) 40%, rgba(5,13,26,0.6) 70%, rgba(5,13,26,0.95) 100%);
+    z-index: 1;
+  }
+  .narrative-area {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 48px 32px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .scene-header {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 300;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--neon-cyan);
+    opacity: 0.6;
+    margin-bottom: 12px;
+  }
+  .scene-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.5rem, 3vw, 2.5rem);
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #fff;
+    margin-bottom: 20px;
+    text-shadow: 0 0 30px rgba(0,229,255,0.2);
+  }
+  .scene-text {
+    font-size: clamp(1rem, 1.5vw, 1.15rem);
+    line-height: 1.8;
+    color: rgba(224, 247, 250, 0.75);
+    margin-bottom: 32px;
+    min-height: 120px;
+  }
+  .scene-text .typed-char {
+    opacity: 0;
+    animation: charReveal 0.03s ease forwards;
+  }
+  @keyframes charReveal {
+    to { opacity: 1; }
+  }
+  .choices-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .choice-btn {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 24px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: rgba(224, 247, 250, 0.8);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+  }
+  .choice-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: linear-gradient(180deg, var(--neon-cyan), var(--neon-amber));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .choice-btn:hover {
+    background: rgba(0, 229, 255, 0.08);
+    border-color: rgba(0, 229, 255, 0.4);
+    transform: translateX(8px);
+    color: #fff;
+  }
+  .choice-btn:hover::before {
+    opacity: 1;
+  }
+  .choice-arrow {
+    font-size: 1.2rem;
+    color: var(--neon-cyan);
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+  }
+  .choice-btn:hover .choice-arrow {
+    opacity: 1;
+  }
+  .choice-text {
+    flex: 1;
+  }
+  .choice-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: rgba(0, 229, 255, 0.1);
+    color: var(--neon-cyan);
+    opacity: 0.6;
+  }
+  .sidebar {
+    width: 320px;
+    background: linear-gradient(180deg, rgba(5,13,26,0.9), rgba(3,8,16,0.95));
+    border-left: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 5;
+  }
+  @media (max-width: 1024px) {
+    .sidebar { display: none; }
+  }
+  .sidebar-section {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .sidebar-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--neon-amber);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sidebar-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--glass-border), transparent);
+  }
+  .inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .inv-slot {
+    aspect-ratio: 1;
+    background: rgba(10, 22, 40, 0.6);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  .inv-slot:hover {
+    border-color: rgba(0, 229, 255, 0.4);
+    background: rgba(0, 229, 255, 0.05);
+  }
+  .inv-slot.has-item {
+    border-color: rgba(255, 179, 0, 0.3);
+    background: rgba(255, 179, 0, 0.05);
+  }
+  .log-entries {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .log-entries::-webkit-scrollbar {
+    width: 4px;
+  }
+  .log-entries::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 2px;
+  }
+  .log-entry {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    color: rgba(224, 247, 250, 0.5);
+    padding: 6px 10px;
+    background: rgba(10, 22, 40, 0.4);
+    border-radius: 4px;
+    border-left: 2px solid var(--glass-border);
+  }
+  .log-entry.new {
+    border-left-color: var(--neon-cyan);
+    animation: logFlash 1s ease;
+  }
+  @keyframes logFlash {
+    0% { background: rgba(0, 229, 255, 0.1); }
+    100% { background: rgba(10, 22, 40, 0.4); }
+  }
+  .log-time {
+    color: var(--neon-cyan);
+    opacity: 0.6;
+    margin-right: 8px;
+  }
+  .status-bar {
+    margin-bottom: 12px;
+  }
+  .status-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(224, 247, 250, 0.5);
+    margin-bottom: 6px;
+  }
+  .status-track {
+    height: 4px;
+    background: rgba(10, 22, 40, 0.8);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .status-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.8s ease;
+  }
+  .status-fill.oxygen { background: linear-gradient(90deg, var(--neon-cyan), #0099cc); }
+  .status-fill.power { background: linear-gradient(90deg, var(--neon-amber), #cc7700); }
+  .status-fill.integrity { background: linear-gradient(90deg, var(--neon-red), #cc0044); }
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    background: rgba(3, 8, 16, 0.9);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .modal-overlay.active {
+    display: flex;
+    opacity: 1;
+  }
+  .modal-content {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(0, 229, 255, 0.1);
+  }
+  .modal-content h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+  .modal-content p {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: rgba(224, 247, 250, 0.6);
+    margin-bottom: 24px;
+  }
+  .modal-btn {
+    padding: 12px 32px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--ice-deep);
+    background: linear-gradient(135deg, var(--neon-amber), #ff8f00);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .modal-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(255, 179, 0, 0.4);
+  }
+  .start-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 10001;
+    background: linear-gradient(180deg, #030810, #050d1a, #0a1628);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    transition: opacity 1s ease, visibility 1s ease;
+  }
+  .start-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .start-subtitle {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 300;
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    color: var(--neon-cyan);
+    opacity: 0.5;
+    margin-bottom: 1.5rem;
+  }
+  .start-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 900;
+    letter-spacing: 3px;
+    background: linear-gradient(180deg, #fff, #7ee8fa, var(--neon-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+  }
+  .start-desc {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: rgba(224, 247, 250, 0.5);
+    max-width: 500px;
+    margin-bottom: 2.5rem;
+  }
+  .start-btn {
+    padding: 16px 48px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--ice-deep);
+    background: linear-gradient(135deg, var(--neon-amber), #ff8f00);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s ease;
+    box-shadow: 0 0 40px rgba(255, 179, 0, 0.3);
+  }
+  .start-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 50px rgba(255, 179, 0, 0.5);
+  }
+  #bg-particles {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  /* CHAPTER PANEL */
+  .chapter-panel {
+    position: fixed;
+    top: 0; left: 0;
+    width: 340px;
+    height: 100vh;
+    background: linear-gradient(180deg, rgba(3,8,16,0.98), rgba(5,13,26,0.99));
+    border-right: 1px solid var(--glass-border);
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    padding: 80px 28px 28px;
+    overflow-y: auto;
+  }
+  .chapter-panel.open {
+    transform: translateX(0);
+  }
+  .chapter-panel::-webkit-scrollbar { width: 4px; }
+  .chapter-panel::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 2px; }
+  .chapter-toggle {
+    position: fixed;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    z-index: 201;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+    padding: 18px 10px;
+    cursor: pointer;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 4px;
+    color: var(--neon-cyan);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+  }
+  .chapter-toggle:hover {
+    background: rgba(0, 229, 255, 0.12);
+    padding-left: 16px;
+    color: #fff;
+    text-shadow: 0 0 10px var(--neon-cyan);
+  }
+  .chapter-panel-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 199;
+    background: rgba(3,8,16,0.6);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .chapter-panel-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--neon-amber);
+    margin-bottom: 32px;
+    text-transform: uppercase;
+  }
+  .chapter-block {
+    margin-bottom: 20px;
+    border-left: 2px solid var(--glass-border);
+    padding-left: 16px;
+    transition: all 0.3s ease;
+  }
+  .chapter-block.active {
+    border-left-color: var(--neon-cyan);
+  }
+  .chapter-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: rgba(224, 247, 250, 0.6);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+  .chapter-block.active .chapter-name {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 10px rgba(0,229,255,0.3);
+  }
+  .chapter-sub {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    color: rgba(224, 247, 250, 0.4);
+    margin-bottom: 10px;
+  }
+  .scene-link {
+    display: block;
+    padding: 6px 0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(224, 247, 250, 0.35);
+    cursor: default;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(0,229,255,0.05);
+  }
+  .scene-link.visited {
+    color: rgba(224, 247, 250, 0.6);
+    cursor: pointer;
+  }
+  .scene-link.visited:hover {
+    color: var(--neon-cyan);
+    padding-left: 8px;
+  }
+  .scene-link.current {
+    color: var(--neon-amber);
+  }
+
+  /* CREW / CHARACTERS */
+  .crew-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .crew-slot {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+    position: relative;
+    cursor: pointer;
+    opacity: 0.25;
+    transition: all 0.4s ease;
+    background: rgba(10, 22, 40, 0.6);
+  }
+  .crew-slot.discovered {
+    opacity: 1;
+    border-color: rgba(255, 179, 0, 0.25);
+  }
+  .crew-slot.discovered:hover {
+    border-color: rgba(255, 179, 0, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 179, 0, 0.15);
+  }
+  .crew-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(0.7) contrast(1.1) brightness(0.8);
+    transition: all 0.4s ease;
+  }
+  .crew-slot.discovered:hover img {
+    filter: grayscale(0) contrast(1.1) brightness(1);
+    transform: scale(1.08);
+  }
+  .crew-slot .crew-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 5px 2px;
+    background: linear-gradient(0deg, rgba(5,13,26,0.95), transparent);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.5rem;
+    letter-spacing: 1px;
+    text-align: center;
+    color: var(--neon-amber);
+    text-transform: uppercase;
+  }
+
+  /* CHARACTER MODAL */
+  .char-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 5001;
+    background: rgba(3, 8, 16, 0.92);
+    backdrop-filter: blur(12px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .char-modal-overlay.active {
+    display: flex;
+    opacity: 1;
+  }
+  .char-modal-content {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    width: 420px;
+    max-width: 90vw;
+    overflow: hidden;
+    box-shadow: 0 0 80px rgba(0, 229, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+  }
+  .char-modal-img {
+    width: 100%;
+    height: 240px;
+    object-fit: cover;
+    filter: contrast(1.1) saturate(0.9);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .char-modal-body {
+    padding: 28px;
+    text-align: left;
+  }
+  .char-modal-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .char-modal-role {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--neon-amber);
+    margin-bottom: 16px;
+  }
+  .char-modal-desc {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: rgba(224, 247, 250, 0.6);
+  }
+  .char-modal-close {
+    margin-top: 20px;
+    padding: 10px 28px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--ice-deep);
+    background: linear-gradient(135deg, var(--neon-amber), #ff8f00);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .char-modal-close:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 179, 0, 0.4);
+  }
+
+
+  /* ═══ MINI-GAME: SIGNAL DECRYPTION ═══ */
+  .minigame-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 6000;
+    background: rgba(3, 8, 16, 0.92);
+    backdrop-filter: blur(12px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .minigame-overlay.active {
+    display: flex;
+    opacity: 1;
+  }
+  .decrypt-terminal {
+    background: linear-gradient(180deg, rgba(5,13,26,0.98), rgba(3,8,16,0.99));
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    width: 600px;
+    max-width: 90vw;
+    padding: 40px;
+    box-shadow: 0 0 80px rgba(0,229,255,0.08);
+    position: relative;
+    overflow: hidden;
+  }
+  .decrypt-terminal::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-amber), var(--neon-red));
+  }
+  .decrypt-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--neon-red);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .decrypt-subtitle {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: rgba(224,247,250,0.4);
+    margin-bottom: 24px;
+    letter-spacing: 2px;
+  }
+  .decrypt-cipher {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.4rem;
+    letter-spacing: 6px;
+    color: var(--neon-cyan);
+    background: rgba(0,229,255,0.05);
+    padding: 20px;
+    border-radius: 6px;
+    border: 1px solid var(--glass-border);
+    margin-bottom: 20px;
+    text-align: center;
+    word-break: break-all;
+    line-height: 1.6;
+    text-shadow: 0 0 10px rgba(0,229,255,0.3);
+  }
+  .decrypt-input {
+    width: 100%;
+    background: rgba(10,22,40,0.8);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.2rem;
+    letter-spacing: 4px;
+    color: #fff;
+    text-align: center;
+    text-transform: uppercase;
+    outline: none;
+    transition: all 0.3s ease;
+    margin-bottom: 16px;
+  }
+  .decrypt-input:focus {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 20px rgba(0,229,255,0.1);
+  }
+  .decrypt-input.correct {
+    border-color: #00ff88;
+    color: #00ff88;
+    box-shadow: 0 0 20px rgba(0,255,136,0.2);
+  }
+  .decrypt-input.wrong {
+    border-color: var(--neon-red);
+    color: var(--neon-red);
+    animation: shake 0.4s ease;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+  .decrypt-timer {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 3px;
+    color: var(--neon-amber);
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .decrypt-timer-bar {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,179,0,0.15);
+    border-radius: 2px;
+    margin: 0 16px;
+    overflow: hidden;
+  }
+  .decrypt-timer-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--neon-amber), var(--neon-red));
+    border-radius: 2px;
+    transition: width 0.1s linear;
+  }
+  .decrypt-hint {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(224,247,250,0.3);
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  .decrypt-result {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    text-align: center;
+    margin-top: 16px;
+    min-height: 24px;
+    letter-spacing: 2px;
+  }
+  .decrypt-result.success { color: #00ff88; }
+  .decrypt-result.fail { color: var(--neon-red); }
+
+  /* ═══ MINI-GAME: PRESSURE EQUALIZATION ═══ */
+  .pressure-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 6000;
+    background: rgba(3, 8, 16, 0.88);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .pressure-overlay.active {
+    display: flex;
+    opacity: 1;
+  }
+  .pressure-game {
+    background: linear-gradient(180deg, rgba(5,13,26,0.98), rgba(3,8,16,0.99));
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    width: 480px;
+    max-width: 90vw;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(0,229,255,0.06);
+  }
+  .pressure-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--neon-cyan);
+    margin-bottom: 8px;
+  }
+  .pressure-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(224,247,250,0.4);
+    margin-bottom: 30px;
+    letter-spacing: 2px;
+  }
+  .pressure-gauge {
+    width: 100%;
+    height: 40px;
+    background: rgba(10,22,40,0.8);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 30px;
+  }
+  .pressure-target {
+    position: absolute;
+    top: 0; bottom: 0;
+    background: rgba(0,255,136,0.15);
+    border-left: 2px solid #00ff88;
+    border-right: 2px solid #00ff88;
+    z-index: 1;
+  }
+  .pressure-fill {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-amber));
+    border-radius: 6px;
+    transition: width 0.05s linear;
+    z-index: 2;
+  }
+  .pressure-fill.danger {
+    background: linear-gradient(90deg, var(--neon-amber), var(--neon-red));
+  }
+  .pressure-instruction {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    color: rgba(224,247,250,0.5);
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+  }
+  .pressure-btn {
+    padding: 16px 48px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--ice-deep);
+    background: linear-gradient(135deg, var(--neon-cyan), #0099cc);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .pressure-btn:active {
+    transform: scale(0.96);
+    box-shadow: 0 0 30px rgba(0,229,255,0.3);
+  }
+  .pressure-result {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    margin-top: 20px;
+    min-height: 24px;
+    letter-spacing: 2px;
+  }
+
+  /* ═══ SONAR CANVAS OVERLAY ═══ */
+  .sonar-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 5500;
+    background: rgba(3, 8, 16, 0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+  .sonar-overlay.active {
+    display: flex;
+    opacity: 1;
+  }
+  .sonar-container {
+    position: relative;
+    width: 400px;
+    height: 400px;
+  }
+  #sonar-canvas {
+    width: 100%;
+    height: 100%;
+  }
+  .sonar-label {
+    position: absolute;
+    bottom: -40px;
+    left: 0; right: 0;
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 4px;
+    color: var(--neon-cyan);
+    text-transform: uppercase;
+  }
+  .sonar-close {
+    position: absolute;
+    top: -50px;
+    right: 0;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    color: rgba(224,247,250,0.4);
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: color 0.3s ease;
+  }
+  .sonar-close:hover { color: var(--neon-red); }
+
+
+  /* ═══ MINI-GAME: CIRCUIT WIRING ═══ */
+  .circuit-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 6000;
+    background: rgba(3, 8, 16, 0.92);
+    backdrop-filter: blur(12px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .circuit-overlay.active {
+    display: flex;
+    opacity: 1;
+  }
+  .circuit-board {
+    background: linear-gradient(180deg, rgba(5,13,26,0.98), rgba(3,8,16,0.99));
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 36px;
+    width: 520px;
+    max-width: 95vw;
+    box-shadow: 0 0 80px rgba(0,229,255,0.06);
+  }
+  .circuit-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--neon-amber);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .circuit-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(224,247,250,0.4);
+    margin-bottom: 24px;
+    letter-spacing: 2px;
+  }
+  .circuit-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .circuit-tile {
+    aspect-ratio: 1;
+    background: rgba(10,22,40,0.8);
+    border: 1px solid rgba(0,229,255,0.15);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .circuit-tile:hover {
+    border-color: rgba(0,229,255,0.4);
+    background: rgba(0,229,255,0.05);
+  }
+  .circuit-tile.powered {
+    border-color: #00ff88;
+    box-shadow: 0 0 12px rgba(0,255,136,0.2);
+    background: rgba(0,255,136,0.06);
+  }
+  .circuit-tile.source {
+    border-color: var(--neon-amber);
+    background: rgba(255,179,0,0.08);
+  }
+  .circuit-tile.target {
+    border-color: var(--neon-red);
+    background: rgba(255,51,102,0.06);
+  }
+  .circuit-svg {
+    width: 70%;
+    height: 70%;
+    transition: transform 0.3s ease;
+  }
+  .circuit-tile.powered .circuit-svg path {
+    stroke: #00ff88 !important;
+    filter: drop-shadow(0 0 4px rgba(0,255,136,0.6));
+  }
+  .circuit-status {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    text-align: center;
+    letter-spacing: 2px;
+    min-height: 20px;
+  }
+  .circuit-status.locked { color: var(--neon-red); }
+  .circuit-status.open { color: #00ff88; }
+
+  /* ═══ MINI-GAME: MEMORY ECHO ═══ */
+  .memory-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 6000;
+    background: rgba(3, 8, 16, 0.9);
+    backdrop-filter: blur(10px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .memory-overlay.active {
+    display: flex;
+    opacity: 1;
+  }
+  .memory-game {
+    background: linear-gradient(180deg, rgba(5,13,26,0.98), rgba(3,8,16,0.99));
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 40px;
+    width: 460px;
+    max-width: 95vw;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(0,229,255,0.06);
+  }
+  .memory-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--neon-cyan);
+    margin-bottom: 6px;
+  }
+  .memory-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(224,247,250,0.4);
+    margin-bottom: 28px;
+    letter-spacing: 2px;
+  }
+  .memory-pads {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .memory-pad {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    border: 2px solid var(--glass-border);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    background: rgba(10,22,40,0.6);
+  }
+  .memory-pad::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .memory-pad[data-pad="0"] { border-color: rgba(0,229,255,0.3); }
+  .memory-pad[data-pad="0"]::after { background: radial-gradient(circle, rgba(0,229,255,0.4), transparent 70%); }
+  .memory-pad[data-pad="1"] { border-color: rgba(255,179,0,0.3); }
+  .memory-pad[data-pad="1"]::after { background: radial-gradient(circle, rgba(255,179,0,0.4), transparent 70%); }
+  .memory-pad[data-pad="2"] { border-color: rgba(255,51,102,0.3); }
+  .memory-pad[data-pad="2"]::after { background: radial-gradient(circle, rgba(255,51,102,0.4), transparent 70%); }
+  .memory-pad[data-pad="3"] { border-color: rgba(0,255,136,0.3); }
+  .memory-pad[data-pad="3"]::after { background: radial-gradient(circle, rgba(0,255,136,0.4), transparent 70%); }
+  .memory-pad.lit::after { opacity: 1; }
+  .memory-pad.lit { transform: scale(1.05); }
+  .memory-pad.disabled { pointer-events: none; opacity: 0.4; }
+  .memory-round {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: rgba(224,247,250,0.5);
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  .memory-result {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    min-height: 22px;
+    letter-spacing: 2px;
+  }
+
+  /* ═══ MINI-GAME: MORSE TRANSLATOR ═══ */
+  .morse-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 6000;
+    background: rgba(3, 8, 16, 0.92);
+    backdrop-filter: blur(12px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .morse-overlay.active {
+    display: flex;
+    opacity: 1;
+  }
+  .morse-terminal {
+    background: linear-gradient(180deg, rgba(5,13,26,0.98), rgba(3,8,16,0.99));
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 40px;
+    width: 560px;
+    max-width: 95vw;
+    box-shadow: 0 0 80px rgba(255,179,0,0.06);
+  }
+  .morse-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--neon-amber);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .morse-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(224,247,250,0.4);
+    margin-bottom: 24px;
+    letter-spacing: 2px;
+  }
+  .morse-lamp {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255,179,0,0.08);
+    border: 2px solid rgba(255,179,0,0.2);
+    margin: 0 auto 24px;
+    transition: all 0.05s ease;
+    position: relative;
+  }
+  .morse-lamp.on {
+    background: rgba(255,179,0,0.9);
+    border-color: var(--neon-amber);
+    box-shadow: 0 0 40px rgba(255,179,0,0.6), 0 0 80px rgba(255,179,0,0.2);
+  }
+  .morse-display {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.6rem;
+    letter-spacing: 8px;
+    color: var(--neon-amber);
+    text-align: center;
+    min-height: 40px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px rgba(255,179,0,0.2);
+  }
+  .morse-input {
+    width: 100%;
+    background: rgba(10,22,40,0.8);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1rem;
+    letter-spacing: 3px;
+    color: #fff;
+    text-align: center;
+    text-transform: uppercase;
+    outline: none;
+    margin-bottom: 16px;
+  }
+  .morse-input:focus {
+    border-color: var(--neon-amber);
+    box-shadow: 0 0 20px rgba(255,179,0,0.1);
+  }
+  .morse-input.correct { border-color: #00ff88; color: #00ff88; }
+  .morse-input.wrong { border-color: var(--neon-red); animation: shake 0.4s ease; }
+  .morse-hint {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: rgba(224,247,250,0.3);
+    text-align: center;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .morse-result {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    text-align: center;
+    min-height: 22px;
+    letter-spacing: 2px;
+  }
+
+
+  /* ═══ INTERACTIVE KEYWORDS ═══ */
+  .keyword {
+    color: var(--neon-cyan);
+    border-bottom: 1px dashed rgba(0,229,255,0.3);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+    padding: 0 2px;
+  }
+  .keyword:hover {
+    color: #fff;
+    border-bottom-color: var(--neon-cyan);
+    text-shadow: 0 0 8px rgba(0,229,255,0.4);
+    background: rgba(0,229,255,0.06);
+    border-radius: 2px;
+  }
+  .keyword.scanned {
+    color: #00ff88;
+    border-bottom-color: rgba(0,255,136,0.4);
+  }
+  .keyword-tooltip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    background: linear-gradient(180deg, rgba(5,13,26,0.98), rgba(3,8,16,0.99));
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    line-height: 1.6;
+    color: rgba(224,247,250,0.7);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  }
+  .keyword:hover .keyword-tooltip {
+    opacity: 1;
+    pointer-events: all;
+    bottom: calc(100% + 14px);
+  }
+  .keyword-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--glass-border);
+  }
+  .keyword-tooltip .tooltip-header {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    color: var(--neon-amber);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  /* ═══ DEEP SCAN BUTTON ═══ */
+  .scan-btn {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    z-index: 3;
+    padding: 8px 16px;
+    background: rgba(10,22,40,0.7);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    color: var(--neon-cyan);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+    text-transform: uppercase;
+  }
+  .scan-btn:hover {
+    background: rgba(0,229,255,0.1);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 20px rgba(0,229,255,0.15);
+  }
+  .scan-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  .scan-result {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: rgba(0,229,255,0.04);
+    border-left: 3px solid var(--neon-cyan);
+    border-radius: 0 6px 6px 0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: rgba(224,247,250,0.6);
+    display: none;
+    animation: scanReveal 0.5s ease;
+  }
+  .scan-result.visible {
+    display: block;
+  }
+  @keyframes scanReveal {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ═══ COMM PANEL (CREW MESSAGES) ═══ */
+  .comm-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 320px;
+    background: linear-gradient(0deg, rgba(5,13,26,0.98), rgba(5,13,26,0.85));
+    border-top: 1px solid var(--glass-border);
+    padding: 16px 24px;
+    z-index: 50;
+    transform: translateY(100%);
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .comm-panel.open {
+    transform: translateY(0);
+  }
+  @media (max-width: 1024px) {
+    .comm-panel { right: 0; }
+  }
+  .comm-msg {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    background: rgba(10,22,40,0.5);
+    border-radius: 6px;
+    border-left: 2px solid var(--glass-border);
+    animation: commSlide 0.4s ease;
+  }
+  .comm-msg.new { border-left-color: var(--neon-cyan); }
+  .comm-msg.reply { border-left-color: var(--neon-amber); }
+  @keyframes commSlide {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .comm-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    overflow: hidden;
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+  .comm-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(0.8);
+  }
+  .comm-body {
+    flex: 1;
+  }
+  .comm-sender {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    color: var(--neon-amber);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .comm-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: rgba(224,247,250,0.7);
+  }
+  .comm-close {
+    position: absolute;
+    top: -36px;
+    right: 24px;
+    padding: 8px 16px;
+    background: rgba(5,13,26,0.9);
+    border: 1px solid var(--glass-border);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    color: var(--neon-cyan);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .comm-close:hover {
+    color: var(--neon-red);
+  }
+  .comm-reply-options {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .comm-reply-btn {
+    padding: 6px 14px;
+    background: rgba(0,229,255,0.08);
+    border: 1px solid var(--glass-border);
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    color: var(--neon-cyan);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .comm-reply-btn:hover {
+    background: rgba(0,229,255,0.15);
+    border-color: var(--neon-cyan);
+  }
+
+  /* ═══ TIMED CHOICE BAR ═══ */
+  .timed-choice-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(255,51,102,0.15);
+    z-index: 3;
+    overflow: hidden;
+    display: none;
+  }
+  .timed-choice-bar.active {
+    display: block;
+  }
+  .timed-choice-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--neon-red), var(--neon-amber));
+    width: 100%;
+    transition: width 0.1s linear;
+  }
+
+  /* ═══ INVENTORY DRAG & DROP ═══ */
+  .inv-slot.dragging {
+    opacity: 0.5;
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(0,229,255,0.3);
+  }
+  .inv-slot.can-use {
+    border-color: var(--neon-amber);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 rgba(255,179,0,0); }
+    50% { box-shadow: 0 0 12px rgba(255,179,0,0.3); }
+  }
+  .scene-drop-zone {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,229,255,0.03);
+    border: 2px dashed rgba(0,229,255,0.2);
+    border-radius: 8px;
+    margin: 20px;
+  }
+  .scene-drop-zone.active {
+    display: flex;
+  }
+  .drop-hint {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    color: var(--neon-cyan);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+
+  /* ═══ VOICE AUDIO CONTROLS ═══ */
+  .voice-toggle {
+    position: fixed;
+    top: 20px;
+    right: 160px;
+    z-index: 200;
+    padding: 8px 14px;
+    background: rgba(10,22,40,0.7);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    color: var(--neon-cyan);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .voice-toggle:hover {
+    background: rgba(0,229,255,0.1);
+    border-color: var(--neon-cyan);
+  }
+  .voice-toggle.muted {
+    color: rgba(224,247,250,0.3);
+    border-color: rgba(224,247,250,0.1);
+  }
+  .voice-toggle.muted:hover {
+    color: var(--neon-red);
+    border-color: var(--neon-red);
+  }
+  .voice-wave {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    height: 12px;
+  }
+  .voice-wave span {
+    width: 2px;
+    background: var(--neon-cyan);
+    border-radius: 1px;
+    animation: voiceWave 0.4s ease-in-out infinite alternate;
+  }
+  .voice-wave span:nth-child(1) { height: 4px; animation-delay: 0s; }
+  .voice-wave span:nth-child(2) { height: 8px; animation-delay: 0.1s; }
+  .voice-wave span:nth-child(3) { height: 6px; animation-delay: 0.2s; }
+  .voice-wave span:nth-child(4) { height: 10px; animation-delay: 0.15s; }
+  .voice-wave span:nth-child(5) { height: 5px; animation-delay: 0.05s; }
+  .voice-toggle.muted .voice-wave span {
+    animation: none;
+    height: 2px;
+    background: rgba(224,247,250,0.2);
+  }
+  @keyframes voiceWave {
+    from { transform: scaleY(0.3); opacity: 0.5; }
+    to { transform: scaleY(1); opacity: 1; }
+  }
+
+  /* ═══ DIALOGUE VISUALIZER ═══ */
+  .comm-msg.speaking .comm-avatar {
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(0,229,255,0.3);
+    border-color: var(--neon-cyan);
+  }
+  .comm-msg.speaking .comm-avatar img {
+    filter: grayscale(0);
+  }
+  .comm-msg.speaking {
+    border-left-color: var(--neon-cyan);
+    background: rgba(0,229,255,0.06);
+  }
+  .comm-msg.sphere-speaking .comm-avatar {
+    box-shadow: 0 0 15px rgba(255,51,102,0.4);
+    border-color: var(--neon-red);
+  }
+  .comm-msg.sphere-speaking {
+    border-left-color: var(--neon-red);
+    background: rgba(255,51,102,0.04);
+  }
+  .comm-msg.system-speaking .comm-avatar {
+    box-shadow: 0 0 10px rgba(255,179,0,0.3);
+    border-color: var(--neon-amber);
+  }
+  .comm-msg.system-speaking {
+    border-left-color: var(--neon-amber);
+  }
+
+</style>
+</head>
+<body>
+
+<div class="crt-overlay"></div>
+<div class="vignette"></div>
+<canvas id="bg-particles"></canvas>
+<!-- CHAPTER PANEL -->
+<div class="chapter-panel-overlay" id="chapter-overlay" onclick="toggleChapterPanel()"></div>
+<div class="chapter-panel" id="chapter-panel">
+  <div class="panel-title">Mission Archive</div>
+  <div id="chapter-list"></div>
+</div>
+<div class="chapter-toggle" onclick="toggleChapterPanel()">Chapters ›</div>
+
+
+<!-- START SCREEN -->
+<div class="start-screen" id="start-screen">
+  <div class="start-subtitle">Interactive Narrative Experience</div>
+  <h1 class="start-title">Glacier Moon<br>Outpost</h1>
+  <p class="start-desc">
+    You are the sole surviving engineer of Outpost Theta-7, buried beneath the frozen surface of a glacier moon.
+    The facility is failing. The ice is shifting. And something is moving in the depths below.
+  </p>
+  <button class="start-btn" onclick="startGame()">Initialize Systems</button>
+</div>
+
+<!-- GAME CONTAINER -->
+  <div class="voice-toggle" id="voice-toggle" onclick="toggleVoice()">
+    <div class="voice-wave" id="voice-wave">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span id="voice-label">VOICE ON</span>
+  </div>
+
+<div id="game-container" style="display:none;">
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-left">
+      <div class="hud-stat">
+        <span class="label">Cycle</span>
+        <span class="value" id="hud-cycle">001</span>
+      </div>
+      <div class="hud-stat">
+        <span class="label">Depth</span>
+        <span class="value" id="hud-depth">12.4 km</span>
+      </div>
+      <div class="hud-stat">
+        <span class="label">Sector</span>
+        <span class="value" id="hud-sector">Habitat Dome</span>
+      </div>
+    </div>
+    <div class="hud-title">OUTPOST THETA-7</div>
+    <div class="hud-right">
+      <div class="hud-stat">
+        <span class="label">O2</span>
+        <span class="value" id="hud-oxygen">87%</span>
+      </div>
+      <div class="hud-stat">
+        <span class="label">PWR</span>
+        <span class="value" id="hud-power">64%</span>
+      </div>
+      <div class="hud-stat">
+        <span class="label">Temp</span>
+        <span class="value warning" id="hud-temp">-187C</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- Scene Viewport -->
+    <div class="scene-viewport">
+      <div class="timed-choice-bar" id="timed-choice-bar">
+        <div class="timed-choice-fill" id="timed-choice-fill"></div>
+      </div>
+
+      <button class="scan-btn" id="scan-btn" onclick="performDeepScan()">🔍 Deep Scan (-5 PWR)</button>
+
+      <div class="scene-drop-zone" id="scene-drop-zone">
+        <div class="drop-hint">Drop Item Here</div>
+      </div>
+
+      <div class="scene-image active" id="scene-image">
+        <img src="https://kimi-web-img.moonshot.cn/img/thumbs.dreamstime.com/bbc1619d82ca4f036f5cb5f52960e9718e91d01f.jpg" alt="">
+      </div>
+      <div class="scene-overlay"></div>
+
+      <div class="narrative-area">
+        <div class="scene-header" id="scene-header">Sector 7 - Habitat Dome</div>
+        <h2 class="scene-title" id="scene-title">The Ice Wakes</h2>
+        <div class="scene-text" id="scene-text"></div>
+        <div class="choices-container" id="choices-container"></div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+      <!-- Status -->
+      <div class="sidebar-section">
+        <div class="sidebar-title">Vitals</div>
+        <div class="status-bar">
+          <div class="status-label">
+            <span>Oxygen Reserve</span>
+            <span id="stat-oxygen-text">87%</span>
+          </div>
+          <div class="status-track">
+            <div class="status-fill oxygen" id="stat-oxygen" style="width:87%"></div>
+          </div>
+        </div>
+        <div class="status-bar">
+          <div class="status-label">
+            <span>Power Grid</span>
+            <span id="stat-power-text">64%</span>
+          </div>
+          <div class="status-track">
+            <div class="status-fill power" id="stat-power" style="width:64%"></div>
+          </div>
+        </div>
+        <div class="status-bar">
+          <div class="status-label">
+            <span>Structural Integrity</span>
+            <span id="stat-integrity-text">92%</span>
+          </div>
+          <div class="status-track">
+            <div class="status-fill integrity" id="stat-integrity" style="width:92%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory -->
+      <div class="sidebar-section">
+        <div class="sidebar-title">Inventory</div>
+        <div class="inventory-grid" id="inventory-grid">
+          <div class="inv-slot" data-slot="0"></div>
+          <div class="inv-slot" data-slot="1"></div>
+          <div class="inv-slot" data-slot="2"></div>
+          <div class="inv-slot" data-slot="3"></div>
+          <div class="inv-slot" data-slot="4"></div>
+          <div class="inv-slot" data-slot="5"></div>
+          <div class="inv-slot" data-slot="6"></div>
+          <div class="inv-slot" data-slot="7"></div>
+          <div class="inv-slot" data-slot="8"></div>
+          <div class="inv-slot" data-slot="9"></div>
+          <div class="inv-slot" data-slot="10"></div>
+          <div class="inv-slot" data-slot="11"></div>
+        </div>
+      </div>
+
+      <!-- Crew -->
+      <div class="sidebar-section">
+        <div class="sidebar-title">Crew Manifest</div>
+        <div class="crew-grid" id="crew-grid">
+          <div class="crew-slot" data-char="webb" onclick="showCharacter('webb')"><img src="./Copilot_20260516_024544.png" alt="Webb"><div class="crew-name">Webb</div></div>
+          <div class="crew-slot" data-char="tanaka" onclick="showCharacter('tanaka')"><img src="./Copilot_20260516_024336.png" alt="Tanaka"><div class="crew-name">Tanaka</div></div>
+          <div class="crew-slot" data-char="callahan" onclick="showCharacter('callahan')"><img src="./Copilot_20260516_024945.png" alt="Callahan"><div class="crew-name">Callahan</div></div>
+          <div class="crew-slot" data-char="reyes" onclick="showCharacter('reyes')"><img src="./Copilot_20260516_024719.png" alt="Reyes"><div class="crew-name">Reyes</div></div>
+          <div class="crew-slot" data-char="callanav" onclick="showCharacter('callanav')"><img src="./Copilot_20260516_025228.png" alt="Callanav"><div class="crew-name">Callanav</div></div>
+          <div class="crew-slot" data-char="unknown"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;opacity:0.3;">?</div><div class="crew-name">Unknown</div></div>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div class="sidebar-section">
+        <div class="sidebar-title">Mission Log</div>
+        <div class="log-entries" id="log-entries"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ═══ MINI-GAME: CIRCUIT WIRING ═══ -->
+<div class="circuit-overlay" id="circuit-overlay">
+  <div class="circuit-board">
+    <div class="circuit-title">⚡ Circuit Repair</div>
+    <div class="circuit-sub">ROTATE SEGMENTS TO CONNECT POWER → DOOR</div>
+    <div class="circuit-grid" id="circuit-grid"></div>
+    <div class="circuit-status locked" id="circuit-status">SYSTEM LOCKED — ROUTE POWER TO TARGET</div>
+  </div>
+</div>
+
+<!-- ═══ MINI-GAME: MEMORY ECHO ═══ -->
+<div class="memory-overlay" id="memory-overlay">
+  <div class="memory-game">
+    <div class="memory-title">🧊 Echo Recall</div>
+    <div class="memory-sub">REPEAT THE SPHERE'S MEMORY SEQUENCE</div>
+    <div class="memory-round" id="memory-round">ROUND 1 / 3</div>
+    <div class="memory-pads" id="memory-pads">
+      <div class="memory-pad" data-pad="0" onclick="MemoryGame.playerTap(0)"></div>
+      <div class="memory-pad" data-pad="1" onclick="MemoryGame.playerTap(1)"></div>
+      <div class="memory-pad" data-pad="2" onclick="MemoryGame.playerTap(2)"></div>
+      <div class="memory-pad" data-pad="3" onclick="MemoryGame.playerTap(3)"></div>
+    </div>
+    <div class="memory-result" id="memory-result"></div>
+  </div>
+</div>
+
+<!-- ═══ MINI-GAME: MORSE TRANSLATOR ═══ -->
+<div class="morse-overlay" id="morse-overlay">
+  <div class="morse-terminal">
+    <div class="morse-title">📡 Alien Transmission</div>
+    <div class="morse-sub">DECODE THE MORSE SIGNAL</div>
+    <div class="morse-lamp" id="morse-lamp"></div>
+    <div class="morse-display" id="morse-display"></div>
+    <input type="text" class="morse-input" id="morse-input" placeholder="TYPE DECODED MESSAGE" autocomplete="off" spellcheck="false">
+    <div class="morse-hint" id="morse-hint">Short flash = • (dot) | Long flash = — (dash)</div>
+    <div class="morse-result" id="morse-result"></div>
+  </div>
+</div>
+
+<!-- ═══ MINI-GAME: SIGNAL DECRYPTION ═══ -->
+<div class="minigame-overlay" id="decrypt-overlay">
+  <div class="decrypt-terminal">
+    <div class="decrypt-title">⚠ Signal Decryption Required</div>
+    <div class="decrypt-subtitle">CLASSIFIED TRANSMISSION — ENCRYPTION: CAESAR-7</div>
+    <div class="decrypt-cipher" id="decrypt-cipher">LOADING...</div>
+    <div class="decrypt-timer">
+      <span>TIME REMAINING</span>
+      <div class="decrypt-timer-bar"><div class="decrypt-timer-fill" id="decrypt-timer-fill" style="width:100%"></div></div>
+      <span id="decrypt-time-text">30.0s</span>
+    </div>
+    <input type="text" class="decrypt-input" id="decrypt-input" placeholder="TYPE DECODED MESSAGE" autocomplete="off" spellcheck="false">
+    <div class="decrypt-hint" id="decrypt-hint">Each letter is shifted forward by 7 positions in the alphabet</div>
+    <div class="decrypt-result" id="decrypt-result"></div>
+  </div>
+</div>
+
+<!-- ═══ MINI-GAME: PRESSURE EQUALIZATION ═══ -->
+<div class="pressure-overlay" id="pressure-overlay">
+  <div class="pressure-game">
+    <div class="pressure-title">Airlock Pressure</div>
+    <div class="pressure-sub">EQUALIZE BEFORE ENTRY — HOLD TO CHARGE</div>
+    <div class="pressure-gauge">
+      <div class="pressure-target" id="pressure-target" style="left:35%;width:20%"></div>
+      <div class="pressure-fill" id="pressure-fill" style="width:0%"></div>
+    </div>
+    <div class="pressure-instruction" id="pressure-instruction">Hold [SPACE] or Click & Hold to charge pressure</div>
+    <button class="pressure-btn" id="pressure-btn" onmousedown="pressureHoldStart()" onmouseup="pressureHoldEnd()" onmouseleave="pressureHoldEnd()" ontouchstart="pressureHoldStart()" ontouchend="pressureHoldEnd()">HOLD</button>
+    <div class="pressure-result" id="pressure-result"></div>
+  </div>
+</div>
+
+<!-- ═══ SONAR VISUALIZATION ═══ -->
+<div class="sonar-overlay" id="sonar-overlay">
+  <div class="sonar-container">
+    <div class="sonar-close" onclick="closeSonar()">[ CLOSE SCAN ]</div>
+    <canvas id="sonar-canvas" width="400" height="400"></canvas>
+    <div class="sonar-label">SECTOR 3 — ANOMALY TRACKING</div>
+  </div>
+</div>
+
+<!-- CHARACTER MODAL -->
+<div class="char-modal-overlay" id="char-modal">
+  <div class="char-modal-content">
+    <img class="char-modal-img" id="char-modal-img" src="" alt="">
+    <div class="char-modal-body">
+      <div class="char-modal-name" id="char-modal-name">Name</div>
+      <div class="char-modal-role" id="char-modal-role">Role</div>
+      <div class="char-modal-desc" id="char-modal-desc">Description</div>
+      <button class="char-modal-close" onclick="closeCharModal()">Close File</button>
+    </div>
+  </div>
+
+    <!-- COMM PANEL -->
+    <div class="comm-panel" id="comm-panel">
+      <div class="comm-close" onclick="toggleCommPanel()">[ CLOSE COMMS ]</div>
+      <div id="comm-messages"></div>
+    </div>
+
+  </div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-content">
+    <h2 id="modal-title">Alert</h2>
+    <p id="modal-text">Message</p>
+    <button class="modal-btn" onclick="closeModal()">Acknowledge</button>
+  </div>
+</div>
+
+<script>
+
+// GAME STATE
+const state = {
+  currentScene: 'intro',
+  cycle: 1,
+  oxygen: 87,
+  power: 64,
+  integrity: 92,
+  inventory: [],
+  flags: {},
+  visited: new Set(),
+  log: []
+};
+
+const MAX_INVENTORY = 12;
+
+// SCENE DATABASE
+const scenes = {
+  intro: {
+    header: 'Sector 7 - Habitat Dome',
+    title: 'The Ice Wakes',
+    image: 'Gemini_Generated_Image_l55xnil55xnil55x.png',
+    text: `The emergency lights flicker amber across the dome's curved ceiling. You wake to the sound of ice groaning - a deep, bass rumble that vibrates through the floor plates. The outpost has been silent for six weeks. Six weeks since the evacuation order. Six weeks since you chose to stay behind.\n\nThe console blinks with a single message: SEISMIC ANOMALY DETECTED - SECTOR 3. The extraction core. Where the deepest drills operate. Where something was found.`,
+    choices: [
+      { text: 'Check the seismic readings on the main console', next: 'console', tag: 'Investigate' },
+      { text: 'Suit up and head to the extraction core', next: 'suit_up', tag: 'Explore' },
+      { text: 'Review the last crew logs before leaving', next: 'logs', tag: 'Research' }
+    ]
+  },
+
+  console: {
+    header: 'Habitat Dome - Main Console',
+    title: 'The Reading',
+    image: 'Gemini_Generated_Image_umk5pbumk5pbumk5.png',
+    text: `The console screen casts a pale blue glow across your face. The seismic data is... wrong. Not a natural ice shift. The wave pattern shows rhythmic pulses, almost mechanical. Like a heartbeat. Every 4.7 seconds.\n\nBelow the seismic readout, a classified file catches your eye: PROJECT DEEPDIVE - ARTIFACT RECOVERY. It was opened three days before evacuation. The last entry reads: "The object is responding to proximity. Do not approach without shielding."`,
+    choices: [
+      { text: 'Open the classified file', next: 'classified', tag: 'Risk +5' },
+      { text: 'Run a diagnostic on the extraction core', next: 'diagnostic', tag: 'Caution' },
+      { text: 'Head to the armory first, then the core', next: 'armory', tag: 'Prepare' },
+      { text: 'Decrypt the encrypted transmission', next: 'decrypt_trigger', tag: 'Hack', action: 'decrypt' }
+    ],
+    onEnter: function() { addLog('Accessed main console. Seismic anomaly confirmed.'); }
+  },
+
+  suit_up: {
+    header: 'Airlock - Suiting Station',
+    title: 'The Descent',
+    image: './Gemini_Generated_Image_hnwlmrhnwlmrhnwl.png',
+    text: `The thermal suit hisses as it pressurizes. Through the airlock viewport, you see the ice tunnel stretching downward - a throat of blue crystal lit by failing sodium lamps. The temperature gauge on your wrist reads -187C.\n\nAs you step into the tunnel, the groaning stops. Replaced by silence. The kind of silence that means something is listening.\n\nYour suit radio crackles. A voice - distorted, fragmented: "...don't... trust... the ice..."`,
+    choices: [
+      { text: 'Respond to the radio transmission', next: 'radio', tag: 'Engage' },
+      { text: 'Equalize airlock pressure and enter tunnel', next: 'pressure_trigger', tag: 'Pressure', action: 'pressure' },
+      { text: 'Continue down the tunnel in silence', next: 'tunnel', tag: 'Stealth' },
+      { text: 'Return to the dome and seal the airlock', next: 'seal_dome', tag: 'Retreat' }
+    ],
+    onEnter: function() {
+      state.oxygen -= 3;
+      addLog('Entered ice tunnel. Anomalous radio contact detected.');
+      updateStats();
+    }
+  },
+
+  logs: {
+    header: 'Habitat Dome - Archive Terminal',
+    title: 'Last Words',
+    image: 'Copilot_20260516_024336.png',
+    text: `The archive terminal hums as you scroll through the final crew logs. Dr. Yuki Tanaka, Chief Geologist, Cycle 89:\n\n"The drill hit something at 14.2 kilometers. Not rock. Not ice. A structure. Perfectly geometric. The samples we brought back... they hum. They vibrate at the same frequency as the seismic pulses. We shouldn't have drilled deeper."\n\nFinal entry, Dr. Marcus Webb, Station Commander, Cycle 91:\n\n"Evacuation is mandatory. But someone needs to stay. Someone needs to make sure it stays buried. Or make sure it doesn't."`,
+    choices: [
+      { text: 'Access the geological survey data', next: 'survey', tag: 'Research' },
+      { text: 'Check what samples remain in storage', next: 'samples', tag: 'Investigate' },
+      { text: 'Leave for the extraction core immediately', next: 'suit_up', tag: 'Urgency' }
+    ],
+    onEnter: function() { addLog('Reviewed crew logs. Geological anomaly at 14.2km depth.'); }
+  },
+
+  classified: {
+    header: 'Main Console - Classified Files',
+    title: 'Project Deepdive',
+    image: 'Copilot_20260516_025228.png',
+    text: `The file opens with a biometric warning that you bypass. Inside: photographs of a structure embedded in the ice. Not built - grown. Crystalline formations in impossible geometries. And at the center, a sphere. Smooth. Black. Absorbing all light that touches it.\n\nThe research notes describe it as a "seeding vessel." Carbon dating is inconclusive - the ice around it is older than the moon itself. The pulses started when the drill breached the inner chamber.\n\nA new alert flashes: PROXIMITY SENSOR TRIGGERED - SECTOR 3.`,
+    choices: [
+      { text: 'Download the data to your suit terminal', next: 'download', tag: 'Data +1' },
+      { text: 'Delete the files and destroy the evidence', next: 'destroy', tag: 'Cover-up' },
+      { text: 'Arm yourself and go to Sector 3', next: 'armory', tag: 'Confront' }
+    ],
+    onEnter: function() {
+      state.flags.knowsArtifact = true;
+      addLog('Accessed classified files. "Seeding vessel" discovered.');
+    }
+  },
+
+  diagnostic: {
+    header: 'Extraction Core - Remote Diagnostic',
+    title: 'System Failure',
+    image: './Gemini_Generated_Image_ob06seob06seob06.png',
+    text: `The remote diagnostic paints a grim picture. The extraction core's primary reactor is offline. Secondary power is draining at 12% per hour. But that's not the worst part.\n\nThe drill array - all twelve bore heads - are still spinning. Autonomous mode. They've drilled an additional 0.8 kilometers since evacuation. And the temperature at the drill face is rising.\n\n-187C on the surface. +4C at 15 kilometers. Something is generating heat.`,
+    choices: [
+      { text: 'Attempt to shut down the drill array remotely', next: 'shutdown', tag: 'Hacking' },
+      { text: 'Go to the core and cut power manually', next: 'core_manual', tag: 'Direct' },
+      { text: 'Let it drill. See what emerges', next: 'wait', tag: 'Observe' }
+    ],
+    onEnter: function() {
+      state.power -= 8;
+      addLog('Remote diagnostic complete. Drills operating autonomously.');
+      updateStats();
+    }
+  },
+
+  armory: {
+    header: 'Habitat Dome - Emergency Armory',
+    title: 'Preparation',
+    image: 'Copilot_20260516_024945.png',
+    text: `The armory is sparse - most equipment went with the evacuation. But you find a thermal cutter, a seismic charge, and an emergency beacon. The beacon is dead - no signal reaches through the ice crust.\n\nOn the wall, someone scratched a message in the frost: "It sings to the ice. Don't listen."\n\nYou pocket what you can carry.`,
+    choices: [
+      { text: 'Take the thermal cutter', next: 'take_cutter', tag: 'Item' },
+      { text: 'Take the seismic charge', next: 'take_charge', tag: 'Item' },
+      { text: 'Take both and head out', next: 'take_both', tag: 'Heavy' }
+    ],
+    onEnter: function() { addLog('Entered emergency armory. Limited supplies available.'); }
+  },
+
+  radio: {
+    header: 'Ice Tunnel - Radio Contact',
+    title: 'The Voice',
+    image: './Gemini_Generated_Image_hnwlmrhnwlmrhnwl.png',
+    text: `You key the radio. Static. Then, clearer:\n\n"...survivor... listen... the ice is not ice... it's memory... stored... compressed... the sphere reads it... learns..."\n\nThe voice cuts out. In the silence, you hear it. A faint melody. Like wind through crystalline caves. But musical. Intentional. Coming from below.\n\nYour suit's radiation detector spikes. Not dangerous levels. But present. The sphere is active.`,
+    choices: [
+      { text: 'Record the melody on your suit', next: 'record', tag: 'Data +1' },
+      { text: 'Descend faster toward the sound', next: 'descend_fast', tag: 'Rush' },
+      { text: 'Find a side tunnel and bypass the core', next: 'side_tunnel', tag: 'Flank' }
+    ],
+    onEnter: function() {
+      state.oxygen -= 5;
+      addLog('Radio contact established. Unknown voice warned about "ice memory."');
+      updateStats();
+    }
+  },
+
+  tunnel: {
+    header: 'Ice Tunnel - Deep Descent',
+    title: 'The Silence',
+    image: './Gemini_Generated_Image_hnwlmrhnwlmrhnwl.png',
+    text: `You move in silence, boots muffled against the frozen floor. The tunnel walls shimmer with embedded minerals - veins of copper and something else. Something that glows faintly blue when you pass.\n\nAfter twenty minutes, the tunnel opens into a cavern. The extraction core looms ahead - a skeletal tower of steel and light, surrounded by drill bore heads that spin lazily despite the power outage.\n\nAnd at the cavern's far end: a new opening. The drills broke through. Beyond it, darkness. And warmth.`,
+    choices: [
+      { text: 'Approach the extraction core carefully', next: 'core_approach', tag: 'Caution' },
+      { text: 'Investigate the new opening', next: 'breach', tag: 'Discovery' },
+      { text: 'Set up a remote camera first', next: 'camera', tag: 'Recon' }
+    ],
+    onEnter: function() {
+      state.oxygen -= 7;
+      addLog('Reached extraction core cavern. Drills still active. New opening detected.');
+      updateStats();
+    }
+  },
+
+  seal_dome: {
+    header: 'Habitat Dome - Sealed',
+    title: 'The Waiting',
+    image: 'Gemini_Generated_Image_umk5pbumk5pbumk5.png',
+    text: `You seal the airlock and engage the emergency locks. The dome becomes a fortress. But the ice doesn't care about locks.\n\nHours pass. The seismic readings worsen. The groaning becomes constant. Then - a new sound. Tapping. Against the dome's exterior. Rhythmic. Like code.\n\nThe console decodes it automatically. A message, repeated: "OPEN. OPEN. OPEN."\n\nYour oxygen will last three more days. The power, two. The tapping, forever.`,
+    choices: [
+      { text: 'Open the airlock', next: 'open_airlock', tag: 'Surrender' },
+      { text: 'Overload the dome reactor and detonate', next: 'detonate', tag: 'Sacrifice' },
+      { text: 'Try to communicate back through the hull', next: 'communicate', tag: 'Dialogue' }
+    ],
+    onEnter: function() {
+      state.oxygen -= 2;
+      addLog('Sealed the dome. External contact attempted.');
+      updateStats();
+    }
+  },
+
+  // Endings
+  detonate: {
+    header: 'Habitat Dome - Final Moments',
+    title: 'The Cleansing Fire',
+    image: 'Gemini_Generated_Image_2ob8c42ob8c42ob8.png',
+    text: `You override the reactor safeties. The dome fills with amber warning light. The tapping outside becomes frantic. Desperate.\n\nThe explosion doesn't just destroy the outpost. It flash-melts kilometers of ice in every direction. The sphere - the seeding vessel - is exposed to the void. Unprotected.\n\nYour last sight through the viewport: the sphere cracking open. Not breaking. Hatching.\n\nAnd something emerging, made of light and ice and ancient memory, reaching toward the stars.\n\n[ENDING: THE CATALYST - You did not survive. But you changed everything.]`,
+    choices: [
+      { text: 'Play Again', next: 'intro', tag: 'Restart' }
+    ],
+    onEnter: function() {
+      addLog('REACTOR OVERLOAD INITIATED. ENDING: THE CATALYST.');
+      showModal('ENDING: THE CATALYST', 'You sacrificed yourself to expose the seeding vessel. The entity emerged into the void. The galaxy will never be the same.');
+    }
+  },
+
+  open_airlock: {
+    header: 'Airlock - The Threshold',
+    title: 'The Invitation',
+    image: 'Gemini_Generated_Image_l55xnil55xnil55x.png',
+    text: `The airlock opens. Not to vacuum. Not to ice. To warmth. To a space that shouldn't exist - a chamber of perfect geometry, lit by the sphere's soft blue glow.\n\nThe entity - if that's what it is - doesn't attack. It extends. A filament of crystalline light touches your suit, then your skin.\n\nYou see everything. The seeding. The waiting. The purpose. This moon was a garden. You were the seed.\n\nAnd now, you bloom.\n\n[ENDING: THE GARDENER - You are no longer human. You are the first of a new kind.]`,
+    choices: [
+      { text: 'Play Again', next: 'intro', tag: 'Restart' }
+    ],
+    onEnter: function() {
+      addLog('AIRLOCK OPENED. CONTACT ESTABLISHED. ENDING: THE GARDENER.');
+      showModal('ENDING: THE GARDENER', 'You accepted the invitation. The entity integrated with you. You are now something new - the bridge between worlds.');
+    }
+  },
+
+  // Branch continuations
+  survey: {
+    header: 'Archive - Geological Survey',
+    title: 'The Truth Below',
+    image: 'Copilot_20260516_024336.png',
+    text: `The geological survey reveals something impossible. The moon's ice layer is 15 kilometers deep - but the structure sits at 14.2 kilometers. It was placed there. Deliberately. Before the ice formed.\n\nCarbon dating of the surrounding rock: 4.2 billion years. The structure itself: undatable. It exists outside normal geological time.\n\nA note from Dr. Tanaka: "The ice grew around it. It waited. It wanted to be found."`,
+    choices: [
+      { text: 'Go to the extraction core now', next: 'suit_up', tag: 'Urgency' },
+      { text: 'Study the survey data more carefully', next: 'deep_study', tag: 'Research' }
+    ],
+    onEnter: function() { addLog('Geological survey: structure predates ice formation.'); }
+  },
+
+  samples: {
+    header: 'Storage Bay - Sample Lockers',
+    title: 'The Humming',
+    image: 'Copilot_20260516_024336.png',
+    text: `The sample lockers are cold-sealed. You open locker 7 - the one marked with Tanaka's initials. Inside: a fragment of the structure. About the size of your fist.\n\nIt hums. Not audibly - you feel it in your teeth, your bones, your thoughts. When you touch it, the hum changes pitch. It responds.\n\nThe fragment shows you an image. Not a vision - a memory. Of this moon, warm and wet, orbiting a young star. And the structure, descending from above, spreading across the surface like frost.\n\nThis was a world once. The structure made it ice.`,
+    choices: [
+      { text: 'Take the fragment with you', next: 'take_fragment', tag: 'Item' },
+      { text: 'Leave it and seal the locker', next: 'seal_locker', tag: 'Caution' },
+      { text: 'Smash the fragment', next: 'smash', tag: 'Destruction' }
+    ],
+    onEnter: function() { addLog('Discovered responsive crystal fragment in storage.'); }
+  },
+
+  deep_study: {
+    header: 'Archive - Extended Analysis',
+    title: 'The Pattern',
+    image: 'Copilot_20260516_025228.png',
+    text: `Hours of analysis reveal a pattern. The structure's geometry matches no known mathematics - until you realize it's not Euclidean. It's temporal. The angles describe time, not space.\n\nThe sphere is a clock. Counting down. Or counting up.\n\nThe pulses are ticks. And based on the interval, there are approximately 72 hours remaining until the next "tick."\n\nWhat happens at zero, you don't know. But the evacuation crew knew. That's why they left.`,
+    choices: [
+      { text: 'Try to stop the countdown', next: 'stop_clock', tag: 'Prevent' },
+      { text: 'Accelerate the countdown to see what happens', next: 'accelerate', tag: 'Experiment' },
+      { text: 'Pack supplies and prepare for the event', next: 'prepare', tag: 'Survive' }
+    ],
+    onEnter: function() {
+      state.flags.knowsCountdown = true;
+      addLog('Analysis complete: sphere is a temporal device. ~72 hours to next event.');
+    }
+  },
+
+  take_cutter: {
+    header: 'Armory - Equipped',
+    title: 'The Cutter',
+    image: 'Copilot_20260516_024945.png',
+    text: `The thermal cutter fits in your suit's thigh mount. It can slice through meter-thick ice in seconds - or, you realize, through the crystalline structure of the sphere itself.\n\nYou head toward the extraction core. The tunnel seems longer than the schematics suggest. Or maybe time is moving differently down here.\n\nThe cutter's power cell reads 94%. Enough for one decisive action.`,
+    choices: [
+      { text: 'Continue to the extraction core', next: 'tunnel', tag: 'Proceed' }
+    ],
+    onEnter: function() {
+      addItem({ icon: '🔥', name: 'Thermal Cutter' });
+      addLog('Equipped thermal cutter. 94% charge remaining.');
+    }
+  },
+
+  take_charge: {
+    header: 'Armory - Equipped',
+    title: 'The Charge',
+    image: 'Copilot_20260516_024945.png',
+    text: `The seismic charge is heavier than you expected. Designed to collapse unstable tunnel sections - or, in sufficient quantity, to crack a moon's mantle.\n\nYou have one charge. One chance to seal the sphere's chamber forever. Or to blast it open.\n\nThe choice is yours. But first, you need to reach it.`,
+    choices: [
+      { text: 'Continue to the extraction core', next: 'tunnel', tag: 'Proceed' }
+    ],
+    onEnter: function() {
+      addItem({ icon: '💥', name: 'Seismic Charge' });
+      addLog('Equipped seismic charge. Single use.');
+    }
+  },
+
+  take_both: {
+    header: 'Armory - Overloaded',
+    title: 'The Burden',
+    image: 'Copilot_20260516_024945.png',
+    text: `You take both items. The weight slows you down. Your oxygen consumption increases by 15%. But you have options.\n\nThe tunnel awaits. The ice groans. And somewhere below, the sphere pulses - faster now, as if it senses your approach.`,
+    choices: [
+      { text: 'Continue to the extraction core', next: 'tunnel', tag: 'Proceed' }
+    ],
+    onEnter: function() {
+      addItem({ icon: '🔥', name: 'Thermal Cutter' });
+      addItem({ icon: '💥', name: 'Seismic Charge' });
+      state.oxygen -= 5;
+      addLog('Overloaded equipment. Oxygen consumption increased.');
+      updateStats();
+    }
+  },
+
+  take_fragment: {
+    header: 'Storage - Fragment Secured',
+    title: 'The Weight',
+    image: 'Copilot_20260516_024336.png',
+    text: `You pocket the fragment. It continues to hum against your leg, warm despite the cold. Your thoughts feel... clearer. Sharper. Like the fragment is amplifying something in your mind.\n\nA new ability surfaces: you can sense the sphere's direction. It's pulling you toward the extraction core. Not physically - mentally. A compass made of longing.`,
+    choices: [
+      { text: 'Follow the pull to the core', next: 'suit_up', tag: 'Drawn' },
+      { text: 'Resist and head to the surface relay', next: 'surface_relay', tag: 'Escape' }
+    ],
+    onEnter: function() {
+      addItem({ icon: '💎', name: 'Crystal Fragment' });
+      state.flags.hasFragment = true;
+      addLog('Crystal fragment secured. Mental clarity increased.');
+    }
+  },
+
+  smash: {
+    header: 'Storage - The Breaking',
+    title: 'The Scream',
+    image: 'Gemini_Generated_Image_2ob8c42ob8c42ob8.png',
+    text: `You raise the fragment to smash it against the locker frame. The moment your arm moves, the hum becomes a shriek - not in your ears, but in your mind.\n\nPain. Blinding, white pain. You drop the fragment. It doesn't break. It bounces, once, and lands upright.\n\nThe sphere's pulse triples in frequency. It knows. It felt that.\n\nYour nose is bleeding. The fragment didn't want to be destroyed. And it made sure you knew.`,
+    choices: [
+      { text: 'Leave the fragment and run', next: 'suit_up', tag: 'Flee' },
+      { text: 'Apologize to the fragment', next: 'apologize', tag: 'Absurd' },
+      { text: 'Try again with more force', next: 'smash_again', tag: 'Defiance' }
+    ],
+    onEnter: function() {
+      state.integrity -= 10;
+      addLog('Attempted to destroy fragment. Psychic backlash sustained.');
+      updateStats();
+    }
+  },
+
+  core_approach: {
+    header: 'Extraction Core - The Tower',
+    title: 'The Heart',
+    image: './Gemini_Generated_Image_ob06seob06seob06.png',
+    text: `The extraction core tower rises before you - a cathedral of steel and ice, lit by the spinning drill heads' sparks. The structure is unstable. Ice crystals grow on surfaces that should be too warm.\n\nAt the tower's base, a new door. Not built by human hands. Grown. Crystalline. It pulses with the same rhythm as the sphere.\n\nThe door is open. Just wide enough for a person. Beyond it, stairs descending into blue light.`,
+    choices: [
+      { text: 'Enter the crystalline door', next: 'enter_door', tag: 'Threshold' },
+      { text: 'Climb the tower to the control room', next: 'control_room', tag: 'Override' },
+      { text: 'Plant the seismic charge at the tower base', next: 'plant_charge', tag: 'Destroy' }
+    ],
+    onEnter: function() {
+      state.oxygen -= 4;
+      addLog('Reached extraction core. Crystalline door detected.');
+      updateStats();
+    }
+  },
+
+  breach: {
+    header: 'The Breach - Unknown Chamber',
+    title: 'The Womb',
+    image: './Gemini_Generated_Image_u7cg5bu7cg5bu7cg.png',
+    text: `The drills broke through into a space that shouldn't exist. A spherical chamber, perfectly round, lined with crystalline formations that shift and reform like slow-motion liquid.\n\nAt the center: the sphere. Larger than the photographs suggested. Three meters across. Black. Absorbing.\n\nAnd around it, structures. Chairs. Consoles. Not human design - but designed for beings with similar proportions. This was a ship. A station. A nursery.\n\nThe sphere notices you. The air pressure changes. It's breathing.`,
+    choices: [
+      { text: 'Approach the sphere', next: 'approach_sphere', tag: 'Contact' },
+      { text: 'Examine the surrounding structures', next: 'examine_station', tag: 'Investigate' },
+      { text: 'Use the thermal cutter on the sphere', next: 'cut_sphere', tag: 'Attack' }
+    ],
+    onEnter: function() {
+      state.oxygen -= 6;
+      state.power -= 10;
+      addLog('Entered unknown chamber. Sphere is active and responsive.');
+      updateStats();
+    }
+  },
+
+  enter_door: {
+    header: 'Crystalline Passage - Descent',
+    title: 'The Becoming',
+    image: 'Gemini_Generated_Image_l55xnil55xnil55x.png',
+    text: `The crystalline stairs descend for what feels like hours. The walls show you things. Memories of worlds you've never seen. Species you've never imagined. All of them touching the sphere. All of them... changing.\n\nYou reach the bottom. The sphere waits. It has waited for billions of years. For someone like you. Someone who stayed behind.\n\n"You are the seed," it tells you, without words. "The ice was the soil. The drills were the rain. And now, you bloom."\n\n[ENDING: THE SEED - You are the beginning of a new cycle.]`,
+    choices: [
+      { text: 'Play Again', next: 'intro', tag: 'Restart' }
+    ],
+    onEnter: function() {
+      addLog('DESCENT COMPLETE. ENDING: THE SEED.');
+      showModal('ENDING: THE SEED', 'You descended into the crystalline passage and reached the sphere. It revealed your purpose: you are the seed of a new cosmic cycle. The outpost was merely the garden.');
+    }
+  },
+
+  approach_sphere: {
+    header: 'The Sphere - Contact',
+    title: 'The Merge',
+    image: './Gemini_Generated_Image_u7cg5bu7cg5bu7cg.png',
+    text: `You step toward the sphere. With each step, the air grows warmer. The ice on your suit melts. Your breath no longer fogs.\n\nAt two meters, you see your reflection in its surface. But it's not you. It's you, changed. Crystalline. Beautiful.\n\nAt one meter, it speaks: "We have waited. We have seeded a thousand worlds. You are the first to choose."\n\nIt offers you a choice no human has faced. Become the bridge. Or become the barrier.`,
+    choices: [
+      { text: 'Touch the sphere - become the bridge', next: 'ending_bridge', tag: 'Transcend' },
+      { text: 'Refuse - become the barrier', next: 'ending_barrier', tag: 'Defy' },
+      { text: 'Step through the inner membrane', next: 'act5_intro', tag: 'Awaken' },
+      { text: 'Ask more questions first', next: 'questions', tag: 'Caution' }
+    ],
+    onEnter: function() {
+      state.oxygen -= 3;
+      addLog('Direct sphere contact established. Entity communicates.');
+      updateStats();
+    }
+  },
+
+  ending_bridge: {
+    header: 'The Sphere - Transcendence',
+    title: 'The Bridge',
+    image: 'Gemini_Generated_Image_2ob8c42ob8c42ob8.png',
+    text: `You touch the sphere. The surface yields like water. Your hand passes through, then your arm, then your body.\n\nYou are not destroyed. You are distributed. Every atom of you becomes part of a network spanning worlds. You can feel them all - the other spheres, on other moons, in other galaxies. All waiting. All watching. All remembering.\n\nAnd through you, humanity will join them. Not conquered. Integrated. Preserved.\n\nThe outpost will be found, eventually. And they will know: someone stayed. Someone chose.\n\n[ENDING: THE BRIDGE - You united two civilizations across time and space.]`,
+    choices: [
+      { text: 'Play Again', next: 'intro', tag: 'Restart' }
+    ],
+    onEnter: function() {
+      addLog('ENDING: THE BRIDGE. Transcendence achieved.');
+      showModal('ENDING: THE BRIDGE', 'You chose to become the bridge between humanity and the sphere network. You exist now across a thousand worlds, a living conduit between species separated by eons.');
+    }
+  },
+
+  ending_barrier: {
+    header: 'The Sphere - Defiance',
+    title: 'The Barrier',
+    image: 'Gemini_Generated_Image_umk5pbumk5pbumk5.png',
+    text: `You step back. The sphere's light dims. Not angry - disappointed.\n\n"The barrier has been chosen before," it tells you. "On a thousand worlds. The barrier always falls. The ice always wins. Time is our ally."\n\nYou turn and run. The stairs, the tunnel, the airlock. You seal yourself in the habitat dome. You send a warning beacon - the first signal to pierce the ice crust in weeks.\n\nThe rescue ship arrives in 72 hours. You survive. You tell them everything. They don't believe you.\n\nBut six months later, another outpost goes silent. Then another. The ice spreads.\n\nYou tried to warn them.\n\n[ENDING: THE BARRIER - You survived. But the war is just beginning.]`,
+    choices: [
+      { text: 'Play Again', next: 'intro', tag: 'Restart' }
+    ],
+    onEnter: function() {
+      addLog('ENDING: THE BARRIER. Warning transmitted. Rescue imminent.');
+      showModal('ENDING: THE BARRIER', 'You chose to resist the sphere and warn humanity. You survived, but the seeding continues across the galaxy. Your warning may be too late.');
+    }
+  },
+
+  decrypt_trigger: {
+    header: 'Habitat Dome — Terminal',
+    title: 'Decryption Protocol',
+    image: './Gemini_Generated_Image_umk5pbumk5pbumk5.png',
+    text: 'The console detected an encrypted burst transmission embedded in the seismic data. A Caesar-7 cipher. You have one chance to decode it before the security system locks you out.',
+    choices: [],
+    onEnter: function() {
+      triggerDecrypt('classified', 'console');
+      addLog('Initiated decryption protocol on classified transmission.');
+    }
+  },
+
+  pressure_trigger: {
+    header: 'Airlock — Pressure Chamber',
+    title: 'Equalization Required',
+    image: './Gemini_Generated_Image_umk5pbumk5pbumk5.png',
+    text: 'The airlock seal is compromised. External pressure reads -187C. You must manually equalize the chamber pressure before the inner door will open. Too little pressure and the seal won\'t hold. Too much and the gasket blows.',
+    choices: [],
+    onEnter: function() {
+      triggerPressure('tunnel', 'suit_up');
+      addLog('Airlock pressure equalization initiated.');
+    }
+  },
+
+  sonar_trigger: {
+    header: 'Habitat Dome — Sensor Array',
+    title: 'Anomaly Tracking',
+    image: './Gemini_Generated_Image_2ob8c42ob8c42ob8.png',
+    text: 'The long-range sonar array is detecting multiple anomalous signatures moving through the ice. You activate the display to track their positions.',
+    choices: [
+      { text: 'Close sonar and proceed cautiously', next: 'tunnel', tag: 'Caution' },
+      { text: 'Arm yourself before heading out', next: 'armory', tag: 'Prepare' }
+    ],
+    onEnter: function() {
+      triggerSonar();
+      addLog('Sonar array activated. Multiple contacts detected.');
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // ACT V — THE AWAKENING
+  // ═══════════════════════════════════════════════════════════════
+
+  act5_intro: {
+    header: 'Sector 0 — The Chamber',
+    title: 'The Threshold',
+    image: './Gemini_Generated_Image_daekcrdaekcrdaek.png',
+    text: `You stand before the inner door. Not steel. Not ice. A membrane of crystalline light that pulses with the sphere's heartbeat. The air is warm here. Wrong-warm. +12C where it should be -187C.\n\nThe door has no handle. No keypad. Only a circuit panel, exposed and sparking, to your left. And carved into the ice beside it — a sequence of glowing symbols that shift when you blink.\n\nThe sphere knows you're here. It has always known.`,
+    choices: [
+      { text: 'Repair the circuit panel to open the door', next: 'act5_circuit', tag: 'Repair', action: 'circuit' },
+      { text: 'Study the shifting symbols', next: 'act5_memory', tag: 'Learn', action: 'memory' },
+      { text: 'Listen to the sphere's transmission', next: 'act5_morse', tag: 'Listen', action: 'morse' }
+    ],
+    onEnter: function() {
+      addLog('Reached the inner chamber. Sphere activity at maximum.');
+      discoverCharacter('callanav');
+    }
+  },
+
+  act5_circuit: {
+    header: 'Sector 0 — Circuit Panel',
+    title: 'The Wiring',
+    image: './Gemini_Generated_Image_ob06seob06seob06.png',
+    text: `The panel is a mess of crossed wires and burnt relays. Someone — Callahan, probably — tried to force it open and fried half the board. But the power source still hums. You can reroute it.\n\nClick each tile to rotate the wire segments. Connect the power source (amber) to the door lock (red).`,
+    choices: [],
+    onEnter: function() {
+      triggerCircuit('act5_inner', 'act5_intro');
+      addLog('Attempting circuit repair on inner door.');
+    }
+  },
+
+  act5_memory: {
+    header: 'Sector 0 — Symbol Wall',
+    title: 'The Echo',
+    image: './Gemini_Generated_Image_daekcrdaekcrdaek.png',
+    text: `The symbols are not static. They flow like liquid light, rearranging themselves in patterns. As you watch, you realize they're not writing — they're memories. The sphere's memories.\n\nIt wants you to remember with it. To prove you can hold its pattern. Repeat the sequence of lights.`,
+    choices: [],
+    onEnter: function() {
+      triggerMemory('act5_inner', 'act5_intro');
+      addLog('Engaged with sphere memory patterns.');
+    }
+  },
+
+  act5_morse: {
+    header: 'Sector 0 — Transmission',
+    title: 'The Signal',
+    image: './Gemini_Generated_Image_daekcrdaekcrdaek.png',
+    text: `A single light blinks on the wall. Not random. Rhythmic. Morse code, but the timing is alien — too precise, too patient. The sphere is speaking in the oldest language.\n\nWatch the flashes. Decode the message.`,
+    choices: [],
+    onEnter: function() {
+      triggerMorse('act5_inner', 'act5_intro');
+      addLog('Receiving Morse transmission from sphere.');
+    }
+  },
+
+  act5_inner: {
+    header: 'Sector 0 — The Sanctum',
+    title: 'The Sanctum',
+    image: './Gemini_Generated_Image_u7cg5bu7cg5bu7cg.png',
+    text: `The membrane parts. Not opens — parts, like a wound healing in reverse. Beyond it, the sphere fills the space. Three meters of perfect black, suspended in air that shimmers with heat distortion.\n\nThe floor is covered in crystalline growths. They crunch under your boots like frost. Each step sends ripples across the sphere's surface.\n\nIt speaks without sound: "You solved the ice. You solved the wire. You solved the memory. Now solve yourself."`,
+    choices: [
+      { text: 'Offer yourself — become the vessel', next: 'act5_ascend', tag: 'Surrender' },
+      { text: 'Destroy the sphere with the thermal cutter', next: 'act5_destroy', tag: 'Destroy', req: 'Thermal Cutter' },
+      { text: 'Plant the seismic charge and retreat', next: 'act5_sacrifice', tag: 'Sacrifice', req: 'Seismic Charge' },
+      { text: 'Record everything and run', next: 'act5_escape', tag: 'Survive' }
+    ],
+    onEnter: function() {
+      addLog('Entered the sanctum. Direct sphere contact imminent.');
+      state.oxygen -= 10;
+      state.power -= 20;
+      updateStats();
+    }
+  },
+
+  act5_ascend: {
+    header: 'The Sanctum — Transcendence',
+    title: 'The Vessel',
+    image: './Gemini_Generated_Image_l55xnil55xnil55x.png',
+    text: `You step forward. The sphere does not resist. It envelops you like water, like sleep, like birth.\n\nYour body remains — frozen, preserved, perfect — but you are elsewhere. You are everywhere. You feel the other outposts, the other moons, the other seeds waiting in ice across the galaxy.\n\nYou are not the first. You are not the last. You are the bridge that was promised.\n\nAnd when the rescue ship finally arrives, they will find only silence. Only ice. Only you, smiling, eyes open, dreaming of stars.\n\n[ENDING: THE VESSEL — You became what the sphere needed. The seeding continues.]`,
+    choices: [
+      { text: 'Play Again', next: 'intro', tag: 'Restart' }
+    ],
+    onEnter: function() {
+      addLog('ENDING: THE VESSEL. Transcendence complete.');
+      showModal('ENDING: THE VESSEL', 'You offered yourself to the sphere. You are now part of the cosmic seeding network, dreaming across a thousand frozen worlds.');
+    }
+  },
+
+  act5_destroy: {
+    header: 'The Sanctum — The Cutting',
+    title: 'The Wound',
+    image: './Gemini_Generated_Image_umk5pbumk5pbumk5.png',
+    text: `You raise the thermal cutter. The sphere's surface — that perfect, light-eating black — actually flinches. A ripple. A recoil.\n\nThe blade sinks in. Not easily. It screams, a sound that isn't sound but pressure, but pain given frequency. The sphere cracks along a seam you couldn't see.\n\nInside: not machinery. Not biology. Something between. Something that bleeds light. You keep cutting until the glow fades. Until the heartbeat stops. Until the ice begins to groan again — normal groans, natural groans, the groans of a dead moon.\n\nYou walk back to the dome. It takes six hours. You don't look back.\n\n[ENDING: THE WOUND — You killed a god and became a murderer.]`,
+    choices: [
+      { text: 'Play Again', next: 'intro', tag: 'Restart' }
+    ],
+    onEnter: function() {
+      addLog('ENDING: THE WOUND. Sphere destroyed by thermal cutter.');
+      showModal('ENDING: THE WOUND', 'You used the thermal cutter to destroy the sphere. The moon is silent again. You are alone, and alive, and wondering if you made the right choice.');
+    }
+  },
+
+  act5_sacrifice: {
+    header: 'The Sanctum — The Detonation',
+    title: 'The Seal',
+    image: './Gemini_Generated_Image_2ob8c42ob8c42ob8.png',
+    text: `You don't have enough charge to destroy the sphere. But you have enough to collapse the chamber.\n\nYou set the seismic charge at the base of the crystalline growths — the load-bearing structures. You set the timer for 90 seconds. You run.\n\nThe explosion doesn't reach the dome. But it reaches the ice above the chamber. Tons of it. The sphere is buried under a new glacier, deeper than before. Sealed. Not destroyed. Imprisoned.\n\nYou send a final transmission: "DO NOT EXCAVATE SECTOR 0. EVER." Then you smash the radio.\n\n[ENDING: THE SEAL — You couldn't kill it. So you buried it deeper.]`,
+    choices: [
+      { text: 'Play Again', next: 'intro', tag: 'Restart' }
+    ],
+    onEnter: function() {
+      addLog('ENDING: THE SEAL. Chamber collapsed. Sphere buried.');
+      showModal('ENDING: THE SEAL', 'You collapsed the chamber, burying the sphere under tons of ice. It is trapped, not dead. You are the warden of the deepest prison in the solar system.');
+    }
+  },
+
+  act5_escape: {
+    header: 'The Sanctum — The Retreat',
+    title: 'The Witness',
+    image: './Gemini_Generated_Image_umk5pbumk5pbumk5.png',
+    text: `You don't touch it. You don't speak to it. You record everything — video, audio, seismic, the hum, the heat, the impossible geometry — and you run.\n\nThe tunnel feels longer going back. The airlock screams when you cycle it. The dome is cold, empty, safe.\n\nYou spend three days compiling the data. On day four, you finish the transmission. A tight-beam burst to Earth. Encrypted. Redundant. Unmistakable.\n\nOn day five, the sphere stops pulsing. On day six, it starts again — faster. Angry. Or excited. You can't tell.\n\nOn day seven, the rescue ship arrives. They don't believe you. But they take the data.\n\nSix months later, a new outpost goes silent. Then another. The ice is spreading. And you — you are the only one who knows why.\n\n[ENDING: THE WITNESS — You survived to tell the tale. But who will listen?]`,
+    choices: [
+      { text: 'Play Again', next: 'intro', tag: 'Restart' }
+    ],
+    onEnter: function() {
+      addLog('ENDING: THE WITNESS. Data transmitted. Escape successful.');
+      showModal('ENDING: THE WITNESS', 'You escaped with the evidence. The sphere continues its work across the galaxy. Your testimony may be the only warning humanity receives.');
+    }
+  },
+
+  // Fallback
+  undefined: {
+    header: 'Unknown Sector',
+    title: 'Signal Lost',
+    image: 'https://kimi-web-img.moonshot.cn/img/thumbs.dreamstime.com/bbc1619d82ca4f036f5cb5f52960e9718e91d01f.jpg',
+    text: 'The signal cuts out. Static fills your display. When it clears, you are somewhere else. Somewhere that should not exist. The story continues...',
+    choices: [
+      { text: 'Return to beginning', next: 'intro', tag: 'Restart' }
+    ]
+  }
+};
+
+// GAME ENGINE FUNCTIONS
+function startGame() {
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('game-container').style.display = 'flex';
+  loadScene('intro');
+}
+
+function loadScene(sceneId) {
+  const scene = scenes[sceneId] || scenes.undefined;
+  state.currentScene = sceneId;
+  state.visited.add(sceneId);
+  state.cycle++;
+
+  document.getElementById('hud-cycle').textContent = String(state.cycle).padStart(3, '0');
+  document.getElementById('hud-sector').textContent = scene.header;
+
+  var imgDiv = document.getElementById('scene-image');
+  imgDiv.classList.remove('active');
+  setTimeout(function() {
+    imgDiv.querySelector('img').src = scene.image;
+    imgDiv.classList.add('active');
+  }, 300);
+
+  document.getElementById('scene-header').textContent = scene.header;
+  document.getElementById('scene-title').textContent = scene.title;
+
+  typeText(scene.text);
+  buildChoices(scene.choices);
+
+  if (scene.onEnter) scene.onEnter();
+}
+
+function typeText(text) {
+  var container = document.getElementById('scene-text');
+  container.innerHTML = '';
+  var plainText = text;
+  var chars = plainText.split('');
+  var i = 0;
+
+  function typeChar() {
+    if (i < chars.length) {
+      var span = document.createElement('span');
+      span.className = 'typed-char';
+      span.style.animationDelay = (i * 0.015) + 's';
+      span.textContent = chars[i];
+      container.appendChild(span);
+      i++;
+      setTimeout(typeChar, 15);
+    } else {
+      container.innerHTML = scanKeywords(plainText).replace(/\n/g, '<br>');
+    }
+  }
+  typeChar();
+}
+
+function buildChoices(choices) {
+  var container = document.getElementById('choices-container');
+  container.innerHTML = '';
+
+  choices.forEach(function(choice, idx) {
+    if (choice.req) {
+      var hasItem = false;
+      for (var j = 0; j < state.inventory.length; j++) {
+        if (state.inventory[j].name === choice.req) {
+          hasItem = true;
+          break;
+        }
+      }
+      if (!hasItem) return;
+    }
+
+    var btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.style.animationDelay = (idx * 0.15) + 's';
+    btn.innerHTML = '<span class="choice-arrow">›</span><span class="choice-text">' + choice.text + '</span><span class="choice-tag">' + choice.tag + '</span>';
+    btn.onclick = function() {
+      if (choice.item) addItem(choice.item);
+      loadScene(choice.next);
+    };
+    container.appendChild(btn);
+  });
+}
+
+function addItem(item) {
+  if (state.inventory.length >= MAX_INVENTORY) {
+    showModal('Inventory Full', 'You cannot carry more items. Drop something first.');
+    return;
+  }
+  state.inventory.push(item);
+  updateInventory();
+  addLog('Acquired: ' + item.name);
+}
+
+function updateInventory() {
+  var slots = document.querySelectorAll('.inv-slot');
+  slots.forEach(function(slot, idx) {
+    slot.innerHTML = '';
+    slot.classList.remove('has-item');
+    if (state.inventory[idx]) {
+      slot.innerHTML = state.inventory[idx].icon;
+      slot.classList.add('has-item');
+      slot.title = state.inventory[idx].name;
+    }
+  });
+}
+
+function addLog(message) {
+  var now = new Date();
+  var time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  var container = document.getElementById('log-entries');
+  var div = document.createElement('div');
+  div.className = 'log-entry new';
+  div.innerHTML = '<span class="log-time">' + time + '</span>' + message;
+  container.insertBefore(div, container.firstChild);
+
+  while (container.children.length > 20) {
+    container.removeChild(container.lastChild);
+  }
+
+  setTimeout(function() { div.classList.remove('new'); }, 1000);
+}
+
+function updateStats() {
+  state.oxygen = Math.max(0, Math.min(100, state.oxygen));
+  state.power = Math.max(0, Math.min(100, state.power));
+  state.integrity = Math.max(0, Math.min(100, state.integrity));
+
+  document.getElementById('hud-oxygen').textContent = Math.round(state.oxygen) + '%';
+  document.getElementById('hud-power').textContent = Math.round(state.power) + '%';
+
+  document.getElementById('stat-oxygen').style.width = state.oxygen + '%';
+  document.getElementById('stat-oxygen-text').textContent = Math.round(state.oxygen) + '%';
+  document.getElementById('stat-power').style.width = state.power + '%';
+  document.getElementById('stat-power-text').textContent = Math.round(state.power) + '%';
+  document.getElementById('stat-integrity').style.width = state.integrity + '%';
+  document.getElementById('stat-integrity-text').textContent = Math.round(state.integrity) + '%';
+
+  if (state.oxygen < 20) {
+    document.getElementById('hud-oxygen').classList.add('warning');
+  } else {
+    document.getElementById('hud-oxygen').classList.remove('warning');
+  }
+}
+
+const characters = {
+  webb: { name: 'Cmdr. Marcus Webb', role: 'Station Commander', image: 'Copilot_20260516_024544.png', desc: 'Final evac authority. Stayed until the last transport. His final log entry suggests he knew more than he recorded.', discovered: false },
+  tanaka: { name: 'Dr. Yuki Tanaka', role: 'Chief Geologist', image: 'Copilot_20260516_024336.png', desc: 'Discovered the structure at 14.2km. First to hear the hum. Her samples responded to touch and proximity.', discovered: false },
+  callahan: { name: 'Jake Callahan', role: 'Lead Mechanic', image: 'Copilot_20260516_024945.png', desc: 'Maintained the drill array. Left his wrench behind in the armory. Known for writing warnings on walls.', discovered: false },
+  reyes: { name: 'Sarah Reyes', role: 'Systems Engineer', image: 'Copilot_20260516_024719.png', desc: 'Kept life support running until final shutdown. May have stayed behind in the tunnels after evacuation.', discovered: false },
+  callanav: { name: 'Dr. Elena Callanav', role: 'Xenobiologist', image: 'Copilot_20260516_025228.png', desc: 'Classified specialist assigned to Project Deepdive. Studied the sphere\'s biological markers and temporal signatures.', discovered: false }
+};
+
+const chapters = [
+  { id: 'prologue', title: 'PROLOGUE', subtitle: 'The Ice Wakes', scenes: ['intro'] },
+  { id: 'act1', title: 'ACT I', subtitle: 'The Signal', scenes: ['console','logs','classified','diagnostic','survey','samples','deep_study'] },
+  { id: 'act2', title: 'ACT II', subtitle: 'The Descent', scenes: ['suit_up','armory','take_cutter','take_charge','take_both','radio','tunnel','seal_dome'] },
+  { id: 'act3', title: 'ACT III', subtitle: 'The Core', scenes: ['core_approach','breach'] },
+  { id: 'act4', title: 'ACT IV', subtitle: 'The Sphere', scenes: ['approach_sphere','enter_door','ending_bridge','ending_barrier','detonate','open_airlock'] },
+  { id: 'act5', title: 'ACT V', subtitle: 'The Awakening', scenes: ['act5_intro','act5_circuit','act5_memory','act5_morse','act5_inner','act5_ascend','act5_destroy','act5_sacrifice','act5_escape'] }
+];
+
+function discoverCharacter(id) {
+  if (characters[id] && !characters[id].discovered) {
+    characters[id].discovered = true;
+    updateCrew();
+    addLog('Crew profile unlocked: ' + characters[id].name);
+  }
+}
+
+function updateCrew() {
+  document.querySelectorAll('.crew-slot').forEach(function(slot) {
+    var id = slot.getAttribute('data-char');
+    if (id && characters[id]) {
+      if (characters[id].discovered) {
+        slot.classList.add('discovered');
+      } else {
+        slot.classList.remove('discovered');
+      }
+    }
+  });
+}
+
+function showCharacter(id) {
+  var c = characters[id];
+  if (!c || !c.discovered) {
+    showModal('Access Denied', 'Profile locked. Discover this crew member in the story to unlock their file.');
+    return;
+  }
+  document.getElementById('char-modal-img').src = c.image;
+  document.getElementById('char-modal-name').textContent = c.name;
+  document.getElementById('char-modal-role').textContent = c.role;
+  document.getElementById('char-modal-desc').textContent = c.desc;
+  document.getElementById('char-modal').classList.add('active');
+}
+
+function closeCharModal() {
+  document.getElementById('char-modal').classList.remove('active');
+}
+
+function toggleChapterPanel() {
+  document.getElementById('chapter-panel').classList.toggle('open');
+  document.getElementById('chapter-overlay').classList.toggle('active');
+}
+
+function renderChapterPanel() {
+  var container = document.getElementById('chapter-list');
+  container.innerHTML = '';
+  chapters.forEach(function(ch) {
+    var isActive = ch.scenes.includes(state.currentScene);
+    var block = document.createElement('div');
+    block.className = 'chapter-block' + (isActive ? ' active' : '');
+    block.innerHTML = '<div class="chapter-name">' + ch.title + '</div><div class="chapter-sub">' + ch.subtitle + '</div>';
+    ch.scenes.forEach(function(sid) {
+      var scene = scenes[sid];
+      if (!scene) return;
+      var link = document.createElement('span');
+      link.className = 'scene-link';
+      if (state.visited.has(sid)) link.classList.add('visited');
+      if (sid === state.currentScene) link.classList.add('current');
+      link.textContent = (sid === state.currentScene ? '▸ ' : '') + scene.title;
+      if (state.visited.has(sid)) {
+        link.onclick = function() { toggleChapterPanel(); loadScene(sid); };
+      }
+      block.appendChild(link);
+    });
+    container.appendChild(block);
+  });
+}
+
+function showModal(title, text) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-text').textContent = text;
+  document.getElementById('modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+}
+
+// PARTICLE BACKGROUND
+var pCanvas = document.getElementById('bg-particles');
+var pCtx = pCanvas.getContext('2d');
+var pW, pH;
+var particles = [];
+
+function resizeParticles() {
+  pW = pCanvas.width = window.innerWidth;
+  pH = pCanvas.height = window.innerHeight;
+}
+resizeParticles();
+window.addEventListener('resize', resizeParticles);
+
+function Particle() {
+  this.reset();
+}
+
+Particle.prototype.reset = function() {
+  this.x = Math.random() * pW;
+  this.y = Math.random() * pH;
+  this.size = Math.random() * 2 + 0.3;
+  this.speedX = (Math.random() - 0.5) * 0.3;
+  this.speedY = (Math.random() - 0.5) * 0.2 - 0.1;
+  this.opacity = Math.random() * 0.4 + 0.1;
+  this.life = Math.random() * 200 + 100;
+  this.maxLife = this.life;
+};
+
+Particle.prototype.update = function() {
+  this.x += this.speedX;
+  this.y += this.speedY;
+  this.life--;
+  if (this.life <= 0 || this.x < -15 || this.x > pW + 15 || this.y < -15 || this.y > pH + 15) {
+    this.reset();
+  }
+};
+
+Particle.prototype.draw = function() {
+  var lifeRatio = this.life / this.maxLife;
+  var alpha = this.opacity * lifeRatio;
+  pCtx.beginPath();
+  var s = this.size;
+  pCtx.moveTo(this.x, this.y - s);
+  pCtx.lineTo(this.x + s * 0.6, this.y);
+  pCtx.lineTo(this.x, this.y + s);
+  pCtx.lineTo(this.x - s * 0.6, this.y);
+  pCtx.closePath();
+  pCtx.fillStyle = 'rgba(126, 232, 250, ' + alpha + ')';
+  pCtx.shadowColor = 'rgba(0, 229, 255, 0.6)';
+  pCtx.shadowBlur = this.size * 4;
+  pCtx.fill();
+  pCtx.shadowBlur = 0;
+};
+
+for (var i = 0; i < 150; i++) {
+  particles.push(new Particle());
+}
+
+function animateParticles() {
+  pCtx.clearRect(0, 0, pW, pH);
+  particles.forEach(function(p) {
+    p.update();
+    p.draw();
+  });
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// MINI-GAME: CIRCUIT WIRING (Pipe Rotation Puzzle)
+// ═══════════════════════════════════════════════════════════════
+const CircuitGame = {
+  active: false,
+  grid: [],
+  size: 4,
+  onSuccess: null,
+  onFail: null,
+
+  // Tile types: 0=empty, 1=straight-h, 2=straight-v, 3=corner-ne, 4=corner-se, 5=corner-sw, 6=corner-nw, 7=cross
+  tileShapes: {
+    0: { paths: [], svg: '' },
+    1: { paths: ['ew'], svg: '<path d="M 10 50 L 90 50" stroke="rgba(0,229,255,0.5)" stroke-width="6" fill="none" stroke-linecap="round"/>' },
+    2: { paths: ['ns'], svg: '<path d="M 50 10 L 50 90" stroke="rgba(0,229,255,0.5)" stroke-width="6" fill="none" stroke-linecap="round"/>' },
+    3: { paths: ['ne'], svg: '<path d="M 50 10 L 50 50 L 90 50" stroke="rgba(0,229,255,0.5)" stroke-width="6" fill="none" stroke-linejoin="round" stroke-linecap="round"/>' },
+    4: { paths: ['se'], svg: '<path d="M 50 90 L 50 50 L 90 50" stroke="rgba(0,229,255,0.5)" stroke-width="6" fill="none" stroke-linejoin="round" stroke-linecap="round"/>' },
+    5: { paths: ['sw'], svg: '<path d="M 10 50 L 50 50 L 50 90" stroke="rgba(0,229,255,0.5)" stroke-width="6" fill="none" stroke-linejoin="round" stroke-linecap="round"/>' },
+    6: { paths: ['nw'], svg: '<path d="M 10 50 L 50 50 L 50 10" stroke="rgba(0,229,255,0.5)" stroke-width="6" fill="none" stroke-linejoin="round" stroke-linecap="round"/>' },
+    7: { paths: ['ns','ew'], svg: '<path d="M 50 10 L 50 90 M 10 50 L 90 50" stroke="rgba(0,229,255,0.5)" stroke-width="6" fill="none" stroke-linecap="round"/>' }
+  },
+
+  start: function(onSuccess, onFail) {
+    this.onSuccess = onSuccess || function(){};
+    this.onFail = onFail || function(){};
+    this.active = true;
+    this.generatePuzzle();
+    this.render();
+    document.getElementById('circuit-overlay').classList.add('active');
+    document.getElementById('circuit-status').textContent = 'SYSTEM LOCKED — ROUTE POWER TO TARGET';
+    document.getElementById('circuit-status').className = 'circuit-status locked';
+  },
+
+  generatePuzzle: function() {
+    // Create a solvable path from left to right with some branches
+    this.grid = [];
+    for (let r = 0; r < this.size; r++) {
+      this.grid[r] = [];
+      for (let c = 0; c < this.size; c++) {
+        this.grid[r][c] = { type: 0, rot: 0, powered: false };
+      }
+    }
+    // Generate a winding path from (0,0) to (3,3) or similar
+    const path = this.makePath();
+    path.forEach((cell, i) => {
+      const [r, c] = cell;
+      let type = 1; // default straight
+      if (i > 0 && i < path.length - 1) {
+        const prev = path[i-1];
+        const next = path[i+1];
+        type = this.inferType(prev, cell, next);
+      }
+      this.grid[r][c] = { type: type, rot: Math.floor(Math.random()*4), powered: false };
+    });
+    // Add some random distractor tiles
+    for (let r = 0; r < this.size; r++) {
+      for (let c = 0; c < this.size; c++) {
+        if (this.grid[r][c].type === 0) {
+          this.grid[r][c] = { type: Math.floor(Math.random()*7)+1, rot: Math.floor(Math.random()*4), powered: false };
+        }
+      }
+    }
+    // Source and target
+    this.grid[0][0].type = 1;
+    this.grid[0][0].rot = 0;
+    this.grid[this.size-1][this.size-1].type = 1;
+    this.grid[this.size-1][this.size-1].rot = 0;
+  },
+
+  makePath: function() {
+    // Simple snake path: (0,0) -> (0,1) -> (0,2) -> (0,3) -> (1,3) -> (2,3) -> (3,3)
+    return [[0,0],[0,1],[0,2],[0,3],[1,3],[2,3],[3,3]];
+  },
+
+  inferType: function(prev, curr, next) {
+    const [pr, pc] = prev;
+    const [cr, cc] = curr;
+    const [nr, nc] = next;
+    const dirs = [];
+    if (pr < cr) dirs.push('n');
+    if (pr > cr) dirs.push('s');
+    if (pc < cc) dirs.push('w');
+    if (pc > cc) dirs.push('e');
+    if (nr < cr) dirs.push('n');
+    if (nr > cr) dirs.push('s');
+    if (nc < cc) dirs.push('w');
+    if (nc > cc) dirs.push('e');
+    const key = dirs.sort().join('');
+    const map = { 'ns': 2, 'ew': 1, 'ne': 3, 'en': 3, 'se': 4, 'es': 4, 'sw': 5, 'ws': 5, 'nw': 6, 'wn': 6 };
+    return map[key] || 7;
+  },
+
+  getConnections: function(r, c) {
+    const cell = this.grid[r][c];
+    const shape = this.tileShapes[cell.type];
+    if (!shape) return [];
+    const rots = cell.rot % 4;
+    const dirs = ['n','e','s','w'];
+    const all = [];
+    shape.paths.forEach(p => {
+      const pts = p.split('');
+      pts.forEach(d => {
+        const idx = dirs.indexOf(d);
+        const newIdx = (idx + rots) % 4;
+        all.push(dirs[newIdx]);
+      });
+    });
+    return all;
+  },
+
+  checkPower: function() {
+    // BFS from source
+    const powered = new Set();
+    const queue = [[0,0]];
+    powered.add('0,0');
+    while (queue.length > 0) {
+      const [r, c] = queue.shift();
+      const conns = this.getConnections(r, c);
+      const neighbors = [
+        [r-1, c, 'n', 's'],
+        [r+1, c, 's', 'n'],
+        [r, c-1, 'w', 'e'],
+        [r, c+1, 'e', 'w']
+      ];
+      neighbors.forEach(([nr, nc, need, back]) => {
+        if (nr < 0 || nr >= this.size || nc < 0 || nc >= this.size) return;
+        if (powered.has(nr+','+nc)) return;
+        if (!conns.includes(need)) return;
+        const nConns = this.getConnections(nr, nc);
+        if (!nConns.includes(back)) return;
+        powered.add(nr+','+nc);
+        queue.push([nr, nc]);
+      });
+    }
+    // Update visual
+    for (let r = 0; r < this.size; r++) {
+      for (let c = 0; c < this.size; c++) {
+        this.grid[r][c].powered = powered.has(r+','+c);
+      }
+    }
+    this.render();
+    if (powered.has((this.size-1)+','+(this.size-1))) {
+      this.success();
+    }
+  },
+
+  rotate: function(r, c) {
+    if (!this.active) return;
+    this.grid[r][c].rot = (this.grid[r][c].rot + 1) % 4;
+    this.checkPower();
+  },
+
+  render: function() {
+    const container = document.getElementById('circuit-grid');
+    container.innerHTML = '';
+    for (let r = 0; r < this.size; r++) {
+      for (let c = 0; c < this.size; c++) {
+        const cell = this.grid[r][c];
+        const div = document.createElement('div');
+        div.className = 'circuit-tile';
+        if (r === 0 && c === 0) div.classList.add('source');
+        if (r === this.size-1 && c === this.size-1) div.classList.add('target');
+        if (cell.powered) div.classList.add('powered');
+        const svg = '<svg class="circuit-svg" viewBox="0 0 100 100" style="transform: rotate(' + (cell.rot * 90) + 'deg)">' + (this.tileShapes[cell.type]?.svg || '') + '</svg>';
+        div.innerHTML = svg;
+        div.onclick = (function(rr, cc) { return function() { CircuitGame.rotate(rr, cc); }; })(r, c);
+        container.appendChild(div);
+      }
+    }
+  },
+
+  success: function() {
+    this.active = false;
+    document.getElementById('circuit-status').textContent = '✓ POWER ROUTED — DOOR UNLOCKED';
+    document.getElementById('circuit-status').className = 'circuit-status open';
+    addLog('Circuit repair successful. Inner chamber access granted.');
+    setTimeout(() => {
+      document.getElementById('circuit-overlay').classList.remove('active');
+      this.onSuccess();
+    }, 1500);
+  },
+
+  fail: function() {
+    this.active = false;
+    document.getElementById('circuit-overlay').classList.remove('active');
+    this.onFail();
+  },
+
+  close: function() {
+    this.active = false;
+    document.getElementById('circuit-overlay').classList.remove('active');
+  }
+};
+
+function triggerCircuit(successScene, failScene) {
+  CircuitGame.start(
+    function() { loadScene(successScene); },
+    function() { loadScene(failScene); }
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MINI-GAME: MEMORY ECHO (Simon Says)
+// ═══════════════════════════════════════════════════════════════
+const MemoryGame = {
+  active: false,
+  sequence: [],
+  playerIndex: 0,
+  round: 1,
+  maxRounds: 3,
+  onSuccess: null,
+  onFail: null,
+  isPlayingSequence: false,
+
+  start: function(onSuccess, onFail) {
+    this.onSuccess = onSuccess || function(){};
+    this.onFail = onFail || function(){};
+    this.active = true;
+    this.sequence = [];
+    this.round = 1;
+    this.playerIndex = 0;
+    this.isPlayingSequence = false;
+    document.getElementById('memory-overlay').classList.add('active');
+    document.getElementById('memory-result').textContent = '';
+    this.nextRound();
+  },
+
+  nextRound: function() {
+    if (!this.active) return;
+    if (this.round > this.maxRounds) {
+      this.success();
+      return;
+    }
+    document.getElementById('memory-round').textContent = 'ROUND ' + this.round + ' / ' + this.maxRounds;
+    this.playerIndex = 0;
+    this.isPlayingSequence = true;
+    // Add new step
+    this.sequence.push(Math.floor(Math.random() * 4));
+    // Play sequence
+    this.playSequence(0);
+  },
+
+  playSequence: function(idx) {
+    if (!this.active) return;
+    if (idx >= this.sequence.length) {
+      this.isPlayingSequence = false;
+      document.getElementById('memory-result').textContent = 'REPEAT THE SEQUENCE';
+      document.getElementById('memory-result').style.color = 'var(--neon-cyan)';
+      return;
+    }
+    const pad = this.sequence[idx];
+    setTimeout(() => {
+      this.flashPad(pad);
+      setTimeout(() => {
+        this.playSequence(idx + 1);
+      }, 400);
+    }, 600);
+  },
+
+  flashPad: function(pad) {
+    const el = document.querySelector('.memory-pad[data-pad="' + pad + '"]');
+    if (!el) return;
+    // Audio feedback
+    if (AudioEngineV2.ctx) {
+      const now = AudioEngineV2.ctx.currentTime;
+      const osc = AudioEngineV2.ctx.createOscillator();
+      const freqs = [330, 440, 550, 660];
+      osc.type = 'sine';
+      osc.frequency.value = freqs[pad];
+      const gain = AudioEngineV2.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.08, now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.connect(gain);
+      gain.connect(AudioEngineV2.masterGain);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    }
+    el.classList.add('lit');
+    setTimeout(() => el.classList.remove('lit'), 300);
+  },
+
+  playerTap: function(pad) {
+    if (!this.active || this.isPlayingSequence) return;
+    this.flashPad(pad);
+    if (pad !== this.sequence[this.playerIndex]) {
+      this.fail('SEQUENCE BROKEN');
+      return;
+    }
+    this.playerIndex++;
+    if (this.playerIndex >= this.sequence.length) {
+      document.getElementById('memory-result').textContent = '✓ ROUND ' + this.round + ' COMPLETE';
+      document.getElementById('memory-result').style.color = '#00ff88';
+      this.round++;
+      setTimeout(() => this.nextRound(), 1000);
+    }
+  },
+
+  success: function() {
+    this.active = false;
+    document.getElementById('memory-result').textContent = '✓ ALL ROUNDS COMPLETE — MEMORY ACCEPTED';
+    document.getElementById('memory-result').style.color = '#00ff88';
+    addLog('Echo recall complete. Sphere memory sequence accepted.');
+    setTimeout(() => {
+      document.getElementById('memory-overlay').classList.remove('active');
+      this.onSuccess();
+    }, 1500);
+  },
+
+  fail: function(reason) {
+    this.active = false;
+    document.getElementById('memory-result').textContent = '✗ ' + (reason || 'SEQUENCE FAILED');
+    document.getElementById('memory-result').style.color = 'var(--neon-red)';
+    addLog('Echo recall failed. Sphere rejected the pattern.');
+    state.integrity -= 10;
+    updateStats();
+    setTimeout(() => {
+      document.getElementById('memory-overlay').classList.remove('active');
+      this.onFail();
+    }, 1500);
+  },
+
+  close: function() {
+    this.active = false;
+    document.getElementById('memory-overlay').classList.remove('active');
+  }
+};
+
+function triggerMemory(successScene, failScene) {
+  MemoryGame.start(
+    function() { loadScene(successScene); },
+    function() { loadScene(failScene); }
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MINI-GAME: MORSE TRANSLATOR
+// ═══════════════════════════════════════════════════════════════
+const MorseGame = {
+  active: false,
+  answer: '',
+  currentDisplay: '',
+  onSuccess: null,
+  onFail: null,
+  lampInterval: null,
+
+  puzzles: [
+    { code: '... --- ...', answer: 'SOS', hint: 'Universal distress signal' },
+    { code: '.-- .- .-. -. .. -. --.', answer: 'WARNING', hint: 'Seven letters, starts with W' },
+    { code: '-.-- . ...', answer: 'YES', hint: 'Affirmative' },
+    { code: '-. ---', answer: 'NO', hint: 'Negative' },
+    { code: '... . . -..', answer: 'SEED', hint: 'What you are' },
+    { code: '.. -.-. .', answer: 'ICE', hint: 'What surrounds you' },
+    { code: '... . .-. ...- .', answer: 'SERVE', hint: 'What the sphere wants you to do' },
+    { code: '... . .--. .- .-. .- - .', answer: 'SEPARATE', hint: 'What happens if you resist' }
+  ],
+
+  start: function(onSuccess, onFail) {
+    this.onSuccess = onSuccess || function(){};
+    this.onFail = onFail || function(){};
+    const puzzle = this.puzzles[Math.floor(Math.random() * this.puzzles.length)];
+    this.answer = puzzle.answer;
+    this.currentDisplay = '';
+    this.active = true;
+
+    document.getElementById('morse-display').textContent = '';
+    document.getElementById('morse-input').value = '';
+    document.getElementById('morse-input').className = 'morse-input';
+    document.getElementById('morse-result').textContent = '';
+    document.getElementById('morse-hint').textContent = puzzle.hint;
+    document.getElementById('morse-overlay').classList.add('active');
+    document.getElementById('morse-input').focus();
+
+    this.playCode(puzzle.code);
+  },
+
+  playCode: function(code) {
+    const chars = code.split('');
+    let idx = 0;
+    const step = () => {
+      if (!this.active) return;
+      if (idx >= chars.length) {
+        setTimeout(() => { if (this.active) this.playCode(code); }, 2000);
+        return;
+      }
+      const ch = chars[idx];
+      if (ch === '.') {
+        this.flashLamp(150);
+        this.currentDisplay += '•';
+      } else if (ch === '-') {
+        this.flashLamp(400);
+        this.currentDisplay += '—';
+      } else if (ch === ' ') {
+        this.currentDisplay += ' ';
+      }
+      document.getElementById('morse-display').textContent = this.currentDisplay;
+      idx++;
+      const delay = ch === ' ' ? 600 : (ch === '.' ? 300 : 550);
+      setTimeout(step, delay);
+    };
+    this.currentDisplay = '';
+    step();
+  },
+
+  flashLamp: function(duration) {
+    const lamp = document.getElementById('morse-lamp');
+    lamp.classList.add('on');
+    // Audio beep
+    if (AudioEngineV2.ctx) {
+      const now = AudioEngineV2.ctx.currentTime;
+      const osc = AudioEngineV2.ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      const gain = AudioEngineV2.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.06, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration/1000);
+      osc.connect(gain);
+      gain.connect(AudioEngineV2.masterGain);
+      osc.start(now);
+      osc.stop(now + duration/1000);
+    }
+    setTimeout(() => lamp.classList.remove('on'), duration);
+  },
+
+  check: function(value) {
+    if (!this.active) return;
+    if (value.toUpperCase().trim() === this.answer) {
+      this.success();
+    } else if (value.length >= this.answer.length) {
+      document.getElementById('morse-input').className = 'morse-input wrong';
+      setTimeout(() => {
+        document.getElementById('morse-input').className = 'morse-input';
+      }, 400);
+    }
+  },
+
+  success: function() {
+    this.active = false;
+    document.getElementById('morse-input').className = 'morse-input correct';
+    document.getElementById('morse-result').textContent = '✓ TRANSMISSION DECODED';
+    document.getElementById('morse-result').style.color = '#00ff88';
+    addLog('Morse transmission decoded: ' + this.answer);
+    setTimeout(() => {
+      document.getElementById('morse-overlay').classList.remove('active');
+      this.onSuccess();
+    }, 1200);
+  },
+
+  fail: function() {
+    this.active = false;
+    document.getElementById('morse-overlay').classList.remove('active');
+    this.onFail();
+  },
+
+  close: function() {
+    this.active = false;
+    document.getElementById('morse-overlay').classList.remove('active');
+  }
+};
+
+document.getElementById('morse-input').addEventListener('input', function(e) {
+  MorseGame.check(e.target.value);
+});
+document.getElementById('morse-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') MorseGame.close();
+});
+
+function triggerMorse(successScene, failScene) {
+  MorseGame.start(
+    function() { loadScene(successScene); },
+    function() { loadScene(failScene); }
+  );
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// INTERACTIVE KEYWORDS & LORE SYSTEM
+// ═══════════════════════════════════════════════════════════════
+const keywordDatabase = {
+  'seismic anomaly': {
+    header: 'Geological Analysis',
+    text: 'Wave pattern consistent with artificial origin. Frequency 0.213Hz matches no known tectonic event. Source: 14.2km depth.'
+  },
+  'extraction core': {
+    header: 'Facility Data',
+    text: 'Primary drilling station. 12 autonomous bore heads. Last maintenance: Cycle 87. Temperature at drill face: +4C (anomalous).'
+  },
+  'Project Deepdive': {
+    header: 'Classified',
+    text: 'Authorized personnel: Dr. Callanav, Cmdr. Webb. Objective: Artifact recovery at 14.2km. Status: COMPROMISED.'
+  },
+  'seeding vessel': {
+    header: 'Xenobiology Note',
+    text: 'Carbon-dating inconclusive. Structure predates ice formation. Biological markers present but non-terrestrial.'
+  },
+  'crystalline': {
+    header: 'Mineral Analysis',
+    text: 'Structure exhibits piezoelectric properties. Generates 4.7Hz pulse when stimulated. Not found in natural geology.'
+  },
+  'ice memory': {
+    header: 'Dr. Tanaka Hypothesis',
+    text: '"The ice may store electromagnetic patterns. The sphere reads these patterns like a hard drive. We are the data."'
+  },
+  'thermal cutter': {
+    header: 'Equipment Spec',
+    text: 'Plasma arc cutter. Max temp: 12,000K. Charge: 94%. Capable of slicing crystalline matrices.'
+  },
+  'seismic charge': {
+    text: 'Concussive demolition device. Yield: 2.4kT equivalent. Single-use. Remote detonation capable.'
+  },
+  'airlock': {
+    header: 'Life Support',
+    text: 'Pressure differential: 1.2atm interior / 0atm exterior. Seal integrity: 78%. Manual override available.'
+  },
+  'oxygen': {
+    header: 'Life Support',
+    text: 'Reserve tanks: 3 remaining. Consumption rate increased 15% by thermal suit operation. Estimate: 72 hours at current usage.'
+  }
+};
+
+function scanKeywords(text) {
+  let processed = text;
+  Object.keys(keywordDatabase).forEach(function(kw) {
+    var escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var regex = new RegExp('(' + escaped + ')', 'gi');
+    processed = processed.replace(regex, function(match) {
+      var data = keywordDatabase[kw.toLowerCase()];
+      if (!data) return match;
+      var tooltip = '<div class="keyword-tooltip">' +
+        (data.header ? '<div class="tooltip-header">' + data.header + '</div>' : '') +
+        '<div>' + data.text + '</div></div>';
+      return '<span class="keyword" onclick="markScanned(this)">' + match + tooltip + '</span>';
+    });
+  });
+  return processed;
+}
+
+function markScanned(el) {
+  el.classList.add('scanned');
+  addLog('Scanned: ' + el.textContent.trim());
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEEP SCAN SYSTEM
+// ═══════════════════════════════════════════════════════════════
+const scanDatabase = {
+  intro: {
+    result: 'DEEP SCAN: Seismic readings indicate non-terrestrial wave propagation. The ice at 12.4km is vibrating at 4.7Hz — identical to the sphere's pulse. The outpost is sitting on something alive.',
+    cost: 5
+  },
+  console: {
+    result: 'DEEP SCAN: The classified file contains embedded biometric data from 4 personnel. Dr. Callanav's signature appears 23 times — she was the last to access the artifact chamber.',
+    cost: 5
+  },
+  suit_up: {
+    result: 'DEEP SCAN: Your suit's external microphones are picking up subsonic harmonics below 20Hz. Not wind. Not ice. Something vocalizing below human hearing.',
+    cost: 5
+  },
+  logs: {
+    result: 'DEEP SCAN: The archive terminal retains deleted fragments. Dr. Webb's "final" entry was edited 6 minutes after timestamp. Original text: "It's not a seeding vessel. It's a farm. And we are the crop."',
+    cost: 5
+  },
+  classified: {
+    result: 'DEEP SCAN: The photograph metadata reveals the sphere was photographed from inside. The camera was 2 meters from the surface. Who took this picture?',
+    cost: 5
+  },
+  diagnostic: {
+    result: 'DEEP SCAN: The drill array's autonomous mode was triggered by an external signal — not a system failure. Something below requested the drilling.',
+    cost: 5
+  },
+  armory: {
+    result: 'DEEP SCAN: The frost message "It sings to the ice" contains 14 distinct handwriting samples. 13 are human. The 14th uses a pressure 3x greater than human capability.',
+    cost: 5
+  },
+  radio: {
+    result: 'DEEP SCAN: The radio transmission originated from inside your suit, not external. The voice is using your suit's internal speakers. It has been with you since you woke.',
+    cost: 5
+  },
+  tunnel: {
+    result: 'DEEP SCAN: The glowing veins in the ice walls contain trace amounts of the same crystalline structure as the sphere. The entire moon is networked.',
+    cost: 5
+  },
+  breach: {
+    result: 'DEEP SCAN: The spherical chamber is not empty. Residual heat signatures indicate 47 distinct entities occupied this space within the last 72 hours. You are not alone.',
+    cost: 5
+  },
+  act5_intro: {
+    result: 'DEEP SCAN: The membrane door is 0.3mm thick but blocks all electromagnetic radiation. It is not a barrier. It is a filter. Only certain frequencies pass. Your heartbeat matches the pass criteria.',
+    cost: 8
+  },
+  act5_inner: {
+    result: 'DEEP SCAN: The sphere's surface temperature is exactly 37C — human body temperature. It is mimicking you. Or you are mimicking it.',
+    cost: 10
+  }
+};
+
+function performDeepScan() {
+  var scene = scanDatabase[state.currentScene];
+  if (!scene) {
+    addLog('Deep scan: No anomalous readings in this sector.');
+    return;
+  }
+  if (state.power < scene.cost) {
+    addLog('Deep scan failed: Insufficient power.');
+    showModal('Power Insufficient', 'Deep scan requires ' + scene.cost + '% power. Current: ' + Math.round(state.power) + '%');
+    return;
+  }
+  state.power -= scene.cost;
+  updateStats();
+  addLog('Deep scan complete. Anomalous data recovered.');
+
+  var resultDiv = document.getElementById('scan-result');
+  if (!resultDiv) {
+    var area = document.querySelector('.narrative-area');
+    var div = document.createElement('div');
+    div.className = 'scan-result visible';
+    div.id = 'scan-result';
+    div.innerHTML = '<strong style="color:var(--neon-cyan);">[DEEP SCAN RESULT]</strong><br>' + scene.result;
+    area.insertBefore(div, document.getElementById('choices-container'));
+  } else {
+    resultDiv.innerHTML = '<strong style="color:var(--neon-cyan);">[DEEP SCAN RESULT]</strong><br>' + scene.result;
+    resultDiv.classList.add('visible');
+  }
+
+  document.getElementById('scan-btn').disabled = true;
+  document.getElementById('scan-btn').textContent = 'SCAN COMPLETE';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMM PANEL (CREW MESSAGES)
+// ═══════════════════════════════════════════════════════════════
+const commDatabase = {
+  intro: [
+    { sender: 'AUTOMATED', text: 'Emergency broadcast: All personnel evacuate immediately. This is not a drill.', avatar: null, replies: [] },
+    { sender: 'UNKNOWN', text: '...don't... trust... the ice...', avatar: null, replies: [
+      { text: 'Who is this?', effect: 'suspicion+1' },
+      { text: 'Ignore it', effect: 'none' }
+    ]}
+  ],
+  console: [
+    { sender: 'Dr. Tanaka', text: 'If you're reading this, I didn't make it to the transport. Check locker 7. The fragment responds to warmth.', avatar: './Copilot_20260516_024336.png', replies: [
+      { text: 'I found it', effect: 'tanaka_discovered' },
+      { text: 'Stay safe', effect: 'none' }
+    ]}
+  ],
+  suit_up: [
+    { sender: 'Cmdr. Webb', text: 'Whoever stayed behind — you need to know. The sphere isn't dormant. It's waiting for someone specific. Someone who won't run.', avatar: './Copilot_20260516_024544.png', replies: [
+      { text: 'I won't run', effect: 'courage+1' },
+      { text: 'Why me?', effect: 'none' }
+    ]}
+  ],
+  logs: [
+    { sender: 'Dr. Callanav', text: 'The biological samples are changing. They're adapting to our lab environment. I think they like the warmth. I think they want more.', avatar: './Copilot_20260516_025228.png', replies: [
+      { text: 'Lock them down', effect: 'caution+1' },
+      { text: 'Study them', effect: 'curiosity+1' }
+    ]}
+  ],
+  classified: [
+    { sender: 'AUTOMATED', text: 'Proximity alert: Unknown entity detected in Sector 3. Distance: 14.2km and closing.', avatar: null, replies: [] }
+  ],
+  armory: [
+    { sender: 'Jake Callahan', text: 'If you're using my tools, you're in deep. The thermal cutter can slice the crystal. But ask yourself — should you?', avatar: './Copilot_20260516_024945.png', replies: [
+      { text: 'I have no choice', effect: 'determination+1' },
+      { text: 'What would you do?', effect: 'none' }
+    ]}
+  ],
+  radio: [
+    { sender: 'Sarah Reyes', text: 'I'm still in the tunnels. Below the core. The sphere... it showed me things. I'm not scared anymore. I'm ready.', avatar: './Copilot_20260516_024719.png', replies: [
+      { text: 'Come back', effect: 'compassion+1' },
+      { text: 'What did you see?', effect: 'curiosity+1' }
+    ]}
+  ],
+  breach: [
+    { sender: 'SPHERE', text: 'You are the first to reach this far without fear. The others ran. You stayed. We have been waiting for you.', avatar: null, replies: [
+      { text: 'What do you want?', effect: 'dialogue+1' },
+      { text: 'I'm not afraid', effect: 'courage+1' }
+    ]}
+  ],
+  act5_intro: [
+    { sender: 'SPHERE', text: 'Solve the ice. Solve the wire. Solve the memory. Then solve yourself. We are patient. We have waited billions of years.', avatar: null, replies: [
+      { text: 'I will solve you', effect: 'defiance+1' },
+      { text: 'Teach me', effect: 'submission+1' }
+    ]}
+  ]
+};
+
+var commOpen = false;
+
+function toggleCommPanel() {
+  var panel = document.getElementById('comm-panel');
+  commOpen = !commOpen;
+  panel.classList.toggle('open', commOpen);
+}
+
+function showCommMessages(sceneId) {
+  var msgs = commDatabase[sceneId];
+  if (!msgs) return;
+  var container = document.getElementById('comm-messages');
+  container.innerHTML = '';
+  msgs.forEach(function(msg, i) {
+    var div = document.createElement('div');
+    div.className = 'comm-msg new';
+    div.style.animationDelay = (i * 0.3) + 's';
+    var avatarHtml = msg.avatar ? '<div class="comm-avatar"><img src="' + msg.avatar + '" alt=""></div>' : '<div class="comm-avatar" style="display:flex;align-items:center;justify-content:center;font-size:0.8rem;">📡</div>';
+    var repliesHtml = '';
+    if (msg.replies && msg.replies.length > 0) {
+      repliesHtml = '<div class="comm-reply-options">' + msg.replies.map(function(r) {
+        return '<button class="comm-reply-btn" onclick="sendCommReply(this, '' + r.text + '', '' + (r.effect || 'none') + '')">' + r.text + '</button>';
+      }).join('') + '</div>';
+    }
+    div.innerHTML = avatarHtml + '<div class="comm-body"><div class="comm-sender">' + msg.sender + '</div><div class="comm-text">' + msg.text + '</div>' + repliesHtml + '</div>';
+    container.appendChild(div);
+
+    // Trigger voice after message appears
+    setTimeout(function() {
+      VoiceEngine.speak(msg.text, msg.sender, div);
+    }, 600 + (i * 800));
+
+    setTimeout(function() { div.classList.remove('new'); }, 1000);
+  });
+  if (!commOpen) {
+    toggleCommPanel();
+  }
+}
+
+function sendCommReply(btn, text, effect) {
+  btn.parentElement.innerHTML = '';
+  var container = document.getElementById('comm-messages');
+  var div = document.createElement('div');
+  div.className = 'comm-msg reply';
+  div.innerHTML = '<div class="comm-avatar" style="display:flex;align-items:center;justify-content:center;font-size:0.8rem;">👤</div><div class="comm-body"><div class="comm-sender">YOU</div><div class="comm-text">' + text + '</div></div>';
+  container.appendChild(div);
+  if (effect && effect !== 'none') {
+    addLog('Comm reply sent. Effect: ' + effect);
+    if (!state.flags[effect]) state.flags[effect] = 0;
+    state.flags[effect]++;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TIMED CHOICES
+// ═══════════════════════════════════════════════════════════════
+const TimedChoiceSystem = {
+  active: false,
+  timer: null,
+  timeLeft: 0,
+  maxTime: 15,
+  fallbackScene: null,
+
+  start: function(sceneId, fallbackScene) {
+    this.fallbackScene = fallbackScene;
+    var bar = document.getElementById('timed-choice-bar');
+    var fill = document.getElementById('timed-choice-fill');
+    if (!bar || !fill) return;
+    this.active = true;
+    this.timeLeft = this.maxTime;
+    bar.classList.add('active');
+    fill.style.width = '100%';
+    this.tick();
+  },
+
+  tick: function() {
+    if (!this.active) return;
+    this.timeLeft -= 0.1;
+    var pct = Math.max(0, (this.timeLeft / this.maxTime) * 100);
+    var fill = document.getElementById('timed-choice-fill');
+    if (fill) fill.style.width = pct + '%';
+    if (this.timeLeft <= 0) {
+      this.timeout();
+      return;
+    }
+    this.timer = setTimeout(function() { TimedChoiceSystem.tick(); }, 100);
+  },
+
+  timeout: function() {
+    this.active = false;
+    document.getElementById('timed-choice-bar').classList.remove('active');
+    addLog('Decision timeout. Emergency protocol engaged.');
+    var container = document.getElementById('choices-container');
+    container.innerHTML = '';
+    var btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = '<span class="choice-arrow">›</span><span class="choice-text">Panic — flee to nearest airlock</span><span class="choice-tag">Emergency</span>';
+    btn.onclick = function() {
+      state.oxygen -= 10;
+      state.integrity -= 15;
+      updateStats();
+      loadScene(TimedChoiceSystem.fallbackScene || 'seal_dome');
+    };
+    container.appendChild(btn);
+  },
+
+  stop: function() {
+    this.active = false;
+    clearTimeout(this.timer);
+    var bar = document.getElementById('timed-choice-bar');
+    if (bar) bar.classList.remove('active');
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// INVENTORY DRAG & DROP
+// ═══════════════════════════════════════════════════════════════
+var draggedItem = null;
+var draggedItemIndex = null;
+
+function setupInventoryDrag() {
+  var slots = document.querySelectorAll('.inv-slot');
+  slots.forEach(function(slot, idx) {
+    slot.draggable = true;
+    slot.addEventListener('dragstart', function(e) {
+      if (!state.inventory[idx]) return;
+      draggedItem = state.inventory[idx];
+      draggedItemIndex = idx;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    slot.addEventListener('dragend', function() {
+      this.classList.remove('dragging');
+      document.getElementById('scene-drop-zone').classList.remove('active');
+    });
+  });
+
+  var dropZone = document.getElementById('scene-drop-zone');
+  var viewport = document.querySelector('.scene-viewport');
+
+  viewport.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    dropZone.classList.add('active');
+  });
+  viewport.addEventListener('dragleave', function(e) {
+    if (e.target === viewport) dropZone.classList.remove('active');
+  });
+  dropZone.addEventListener('dragover', function(e) { e.preventDefault(); });
+  dropZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dropZone.classList.remove('active');
+    handleItemDrop(draggedItem, draggedItemIndex);
+  });
+}
+
+function handleItemDrop(item, idx) {
+  if (!item) return;
+  addLog('Used ' + item.name + ' in ' + state.currentScene);
+
+  var interactions = {
+    intro: {
+      'Thermal Cutter': { text: 'You brandish the cutter. The ice on the dome's interior hisses and steams where the beam touches. The groaning outside... stops. Listening.', effect: function() { state.flags.cutterUsedIntro = true; } },
+      'Seismic Charge': { text: 'You plant the charge on the dome floor. One detonation would collapse the entire habitat. A last resort.', effect: function() { state.flags.chargePlantedIntro = true; } }
+    },
+    console: {
+      'Crystal Fragment': { text: 'You press the fragment against the console screen. The display glitches, then shows a hidden file: "SUBJECT ZERO — GENETIC MATCH 99.7%"', effect: function() { state.flags.geneticMatch = true; } }
+    },
+    suit_up: {
+      'Thermal Cutter': { text: 'You test the cutter against the tunnel wall. The ice screams — a high-pitched shriek that echoes for kilometers. The sphere heard you.', effect: function() { state.integrity -= 5; updateStats(); } }
+    },
+    breach: {
+      'Thermal Cutter': { text: 'You approach the sphere with the cutter armed. Its surface ripples. A voice, not audible but felt: "The blade cannot harm what is not matter."', effect: function() { state.flags.cutterOnSphere = true; } },
+      'Seismic Charge': { text: 'You place the charge at the sphere's base. The crystalline floor cracks under the weight. The sphere pulses faster. It knows what the charge is.', effect: function() { state.flags.chargeOnSphere = true; } },
+      'Crystal Fragment': { text: 'You hold the fragment toward the sphere. It leaps from your hand, drawn like a magnet, and merges with the surface. The sphere's pulse slows. It recognizes kin.', effect: function() { state.flags.fragmentMerged = true; removeItem(idx); } }
+    },
+    act5_inner: {
+      'Thermal Cutter': { text: 'The cutter is in your hand. The sphere waits. This is the moment.', effect: function() {} },
+      'Seismic Charge': { text: 'The charge is armed. 90 seconds to decide. The sphere watches.', effect: function() {} }
+    }
+  };
+
+  var sceneInteractions = interactions[state.currentScene];
+  if (sceneInteractions && sceneInteractions[item.name]) {
+    var interaction = sceneInteractions[item.name];
+    var resultDiv = document.getElementById('scan-result');
+    if (resultDiv) {
+      resultDiv.innerHTML = '<strong style="color:var(--neon-amber);">[ITEM USED: ' + item.name.toUpperCase() + ']</strong><br>' + interaction.text;
+      resultDiv.classList.add('visible');
+    }
+    if (interaction.effect) interaction.effect();
+  } else {
+    showModal('No Effect', 'The ' + item.name + ' has no apparent use here.');
+  }
+}
+
+function removeItem(index) {
+  if (index >= 0 && index < state.inventory.length) {
+    state.inventory.splice(index, 1);
+    updateInventory();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PSYCHOMETRIC STATE TRACKING
+// ═══════════════════════════════════════════════════════════════
+const PsychState = {
+  update: function() {
+    var score = 0;
+    var courage = state.flags['courage+1'] || 0;
+    var suspicion = state.flags['suspicion+1'] || 0;
+    var curiosity = state.flags['curiosity+1'] || 0;
+    var defiance = state.flags['defiance+1'] || 0;
+    var submission = state.flags['submission+1'] || 0;
+
+    score = (courage * 2) + (curiosity * 1) + (defiance * 3) - (suspicion * 1) - (submission * 2);
+
+    var tempEl = document.getElementById('hud-temp');
+    if (tempEl) {
+      if (submission >= 2) {
+        tempEl.textContent = 'WARMING';
+        tempEl.style.color = '#ff3366';
+      } else if (defiance >= 2) {
+        tempEl.textContent = 'RESISTING';
+        tempEl.style.color = '#00ff88';
+      } else if (score > 5) {
+        tempEl.textContent = 'AGITATED';
+        tempEl.style.color = 'var(--neon-amber)';
+      }
+    }
+  }
+};
+
+
+// ═══════════════════════════════════════════════════════════════
+// CHARACTER VOICE SYNTHESIS ENGINE
+// ═══════════════════════════════════════════════════════════════
+const VoiceEngine = {
+  enabled: true,
+  speechSynth: null,
+  voices: [],
+
+  init: function() {
+    if ('speechSynthesis' in window) {
+      this.speechSynth = window.speechSynthesis;
+      this.voices = this.speechSynth.getVoices();
+      if (this.speechSynth.onvoiceschanged !== undefined) {
+        this.speechSynth.onvoiceschanged = function() { VoiceEngine.voices = window.speechSynthesis.getVoices(); };
+      }
+    }
+  },
+
+  toggle: function() {
+    this.enabled = !this.enabled;
+    var btn = document.getElementById('voice-toggle');
+    var label = document.getElementById('voice-label');
+    if (this.enabled) {
+      btn.classList.remove('muted');
+      label.textContent = 'VOICE ON';
+    } else {
+      btn.classList.add('muted');
+      label.textContent = 'MUTED';
+      if (this.speechSynth) this.speechSynth.cancel();
+    }
+  },
+
+  speak: function(text, sender, msgElement) {
+    if (!this.enabled || !this.speechSynth) return;
+
+    if (msgElement) {
+      msgElement.classList.add('speaking');
+      if (sender === 'SPHERE') msgElement.classList.add('sphere-speaking');
+      if (sender === 'AUTOMATED') msgElement.classList.add('system-speaking');
+      setTimeout(function() {
+        msgElement.classList.remove('speaking', 'sphere-speaking', 'system-speaking');
+      }, 2000);
+    }
+
+    this.speechSynth.cancel();
+    var utter = new SpeechSynthesisUtterance(text);
+    utter.pitch = sender === 'SPHERE' ? 0.4 : (sender === 'AUTOMATED' ? 0.8 : 1);
+    utter.rate = sender === 'SPHERE' ? 0.6 : 0.9;
+    utter.volume = 0.7;
+    this.speechSynth.speak(utter);
+  }
+};
+
+function toggleVoice() {
+  VoiceEngine.toggle();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENHANCED AUDIO ENGINE v2 — Reverb, Spatial, Proximity
+// ═══════════════════════════════════════════════════════════════
+const AudioEngineV2 = {
+  ctx: null,
+  masterGain: null,
+  reverbNode: null,
+  panner: null,
+  compressor: null,
+  sources: {},
+  isPlaying: false,
+  currentSceneProfile: 'default',
+
+  init: function() {
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.value = 0.4;
+
+      // Compressor
+      this.compressor = this.ctx.createDynamicsCompressor();
+      this.compressor.threshold.value = -24;
+      this.compressor.knee.value = 30;
+      this.compressor.ratio.value = 12;
+      this.compressor.attack.value = 0.003;
+      this.compressor.release.value = 0.25;
+
+      // Reverb (ice cavern)
+      this.reverbNode = this.ctx.createConvolver();
+      this.createReverbImpulse();
+
+      // Spatial panner
+      this.panner = this.ctx.createStereoPanner();
+      this.panner.pan.value = 0;
+
+      // Chain: master -> panner -> compressor -> destination
+      this.masterGain.connect(this.panner);
+      this.panner.connect(this.compressor);
+      this.compressor.connect(this.ctx.destination);
+
+      return true;
+    } catch(e) {
+      console.log('Web Audio V2 not supported');
+      return false;
+    }
+  },
+
+  createReverbImpulse: function() {
+    const rate = this.ctx.sampleRate;
+    const length = rate * 3.0; // 3 second reverb
+    const decay = 2.5;
+    const impulse = this.ctx.createBuffer(2, length, rate);
+    const left = impulse.getChannelData(0);
+    const right = impulse.getChannelData(1);
+    for (let i = 0; i < length; i++) {
+      const n = i / length;
+      const env = Math.pow(1 - n, decay);
+      left[i] = (Math.random() * 2 - 1) * env * 0.5;
+      right[i] = (Math.random() * 2 - 1) * env * 0.5;
+    }
+    this.reverbNode.buffer = impulse;
+  },
+
+  start: function() {
+    if (!this.ctx) this.init();
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.isPlaying) return;
+    this.isPlaying = true;
+
+    this.startDeepDrone();
+    this.startIceGroansV2();
+    this.startProximityHum();
+    this.startWindV2();
+    this.startStaticV2();
+  },
+
+  startDeepDrone: function() {
+    const droneGain = this.ctx.createGain();
+    droneGain.gain.value = 0.12;
+
+    // Send some to reverb
+    const reverbGain = this.ctx.createGain();
+    reverbGain.gain.value = 0.4;
+    droneGain.connect(reverbGain);
+    reverbGain.connect(this.reverbNode);
+    this.reverbNode.connect(this.masterGain);
+    droneGain.connect(this.masterGain);
+
+    const freqs = [55, 82.5, 110, 165, 220];
+    freqs.forEach((f, i) => {
+      const osc = this.ctx.createOscillator();
+      osc.type = i % 2 === 0 ? 'sine' : 'triangle';
+      osc.frequency.value = f;
+      const gain = this.ctx.createGain();
+      gain.gain.value = 0.25 / freqs.length;
+      osc.connect(gain);
+      gain.connect(droneGain);
+      osc.start();
+
+      const lfo = this.ctx.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = 0.03 + Math.random() * 0.08;
+      const lfoGain = this.ctx.createGain();
+      lfoGain.gain.value = 0.015;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+      lfo.start();
+    });
+
+    this.sources.drone = droneGain;
+  },
+
+  startIceGroansV2: function() {
+    const triggerGroan = () => {
+      if (!this.isPlaying) return;
+      const duration = 2 + Math.random() * 5;
+      const now = this.ctx.currentTime;
+      const bufferSize = this.ctx.sampleRate * duration;
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.25));
+      }
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 60 + Math.random() * 250;
+      filter.Q.value = 3;
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.1 + Math.random() * 0.08, now + 0.6);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      // Reverb send
+      const revGain = this.ctx.createGain();
+      revGain.gain.value = 0.5;
+      gain.connect(revGain);
+      revGain.connect(this.reverbNode);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+      noise.start(now);
+      noise.stop(now + duration);
+
+      // Panning drift
+      const panLfo = this.ctx.createOscillator();
+      panLfo.type = 'sine';
+      panLfo.frequency.value = 0.1 + Math.random() * 0.3;
+      const panLfoGain = this.ctx.createGain();
+      panLfoGain.gain.value = 0.6;
+      panLfo.connect(panLfoGain);
+      panLfoGain.connect(this.panner.pan);
+      panLfo.start(now);
+      panLfo.stop(now + duration);
+
+      setTimeout(triggerGroan, (6 + Math.random() * 18) * 1000);
+    };
+    triggerGroan();
+  },
+
+  startProximityHum: function() {
+    const baseFreq = 42;
+    const triggerPulse = () => {
+      if (!this.isPlaying) return;
+      const now = this.ctx.currentTime;
+      // Main pulse
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = baseFreq;
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.1, now + 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+      // Harmonic
+      const osc2 = this.ctx.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.value = baseFreq * 2;
+      const gain2 = this.ctx.createGain();
+      gain2.gain.setValueAtTime(0, now);
+      gain2.gain.linearRampToValueAtTime(0.03, now + 0.1);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      // Subtle FM for "organic" feel
+      const fmOsc = this.ctx.createOscillator();
+      fmOsc.type = 'sine';
+      fmOsc.frequency.value = 0.5;
+      const fmGain = this.ctx.createGain();
+      fmGain.gain.value = 2;
+      fmOsc.connect(fmGain);
+      fmGain.connect(osc.frequency);
+      fmOsc.start(now);
+      fmOsc.stop(now + 1.2);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc2.connect(gain2);
+      gain2.connect(this.masterGain);
+      osc.start(now);
+      osc.stop(now + 1.2);
+      osc2.start(now);
+      osc2.stop(now + 1.0);
+
+      const cycleFactor = Math.min(state.cycle / 50, 0.5);
+      const interval = 4.7 * (1 - cycleFactor);
+      setTimeout(triggerPulse, interval * 1000);
+    };
+    triggerPulse();
+  },
+
+  startWindV2: function() {
+    const bufferSize = 3 * this.ctx.sampleRate;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      b3 = 0.86650 * b3 + white * 0.3104856;
+      b4 = 0.55000 * b4 + white * 0.5329522;
+      b5 = -0.7616 * b5 - white * 0.0168980;
+      data[i] = (b0+b1+b2+b3+b4+b5+b6+white*0.5362) * 0.015;
+      b6 = white * 0.115926;
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    noise.loop = true;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 250;
+    filter.Q.value = 0.4;
+    const gain = this.ctx.createGain();
+    gain.gain.value = 0.05;
+    // Reverb send for wind
+    const revGain = this.ctx.createGain();
+    revGain.gain.value = 0.3;
+    gain.connect(revGain);
+    revGain.connect(this.reverbNode);
+
+    const lfo = this.ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.015;
+    const lfoGain = this.ctx.createGain();
+    lfoGain.gain.value = 180;
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+    lfo.start();
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+    noise.start();
+    this.sources.wind = { noise, gain, lfo };
+  },
+
+  startStaticV2: function() {
+    const triggerStatic = () => {
+      if (!this.isPlaying) return;
+      const now = this.ctx.currentTime;
+      const duration = 0.2 + Math.random() * 0.6;
+      const bufferSize = this.ctx.sampleRate * duration;
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 2500 + Math.random() * 3000;
+      filter.Q.value = 1;
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.025, now + 0.03);
+      gain.gain.linearRampToValueAtTime(0, now + duration);
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+      noise.start(now);
+      noise.stop(now + duration);
+      setTimeout(triggerStatic, (12 + Math.random() * 35) * 1000);
+    };
+    triggerStatic();
+  },
+
+  playSceneAudio: function(sceneId) {
+    if (!this.isPlaying) return;
+    const now = this.ctx.currentTime;
+    if (sceneId === 'radio') {
+      // Distorted radio voice
+      const carrier = this.ctx.createOscillator();
+      carrier.type = 'sawtooth';
+      carrier.frequency.value = 440;
+      const mod = this.ctx.createOscillator();
+      mod.type = 'sine';
+      mod.frequency.value = 8;
+      const modGain = this.ctx.createGain();
+      modGain.gain.value = 200;
+      mod.connect(modGain);
+      modGain.connect(carrier.frequency);
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.04, now + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 2);
+      carrier.connect(gain);
+      gain.connect(this.masterGain);
+      carrier.start(now);
+      carrier.stop(now + 2);
+      mod.start(now);
+      mod.stop(now + 2);
+    }
+    if (sceneId === 'breach' || sceneId === 'enter_door') {
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = 28;
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.12, now + 3);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 10);
+      // Heavy reverb
+      const revGain = this.ctx.createGain();
+      revGain.gain.value = 0.8;
+      gain.connect(revGain);
+      revGain.connect(this.reverbNode);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(now);
+      osc.stop(now + 10);
+    }
+    if (sceneId.startsWith('ending') || sceneId === 'detonate') {
+      for (let i = 0; i < 6; i++) {
+        const osc = this.ctx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.value = 600 + i * 120;
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0, now + i * 0.25);
+        gain.gain.linearRampToValueAtTime(0.03, now + i * 0.25 + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.25 + 0.4);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(now + i * 0.25);
+        osc.stop(now + i * 0.25 + 0.5);
+      }
+    }
+  },
+
+  setVolume: function(val) {
+    if (this.masterGain) {
+      this.masterGain.gain.linearRampToValueAtTime(val, this.ctx.currentTime + 0.5);
+    }
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// MINI-GAME: SIGNAL DECRYPTION
+// ═══════════════════════════════════════════════════════════════
+const DecryptGame = {
+  active: false,
+  timer: null,
+  timeLeft: 0,
+  maxTime: 30,
+  answer: '',
+  onSuccess: null,
+  onFail: null,
+
+  puzzles: [
+    { cipher: 'AOPZ PZ H ZAYPRZ', answer: 'THIS IS A SECRET', hint: 'Shift: +7 (A→H)' },
+    { cipher: 'P UVA H ZLJYLA WLVWSL', answer: 'I NOT A SECRET KEEPER', hint: 'Shift: +7 (A→H)' },
+    { cipher: 'ZAYPRZ AVKPZ', answer: 'SECRET TOOLS', hint: 'Shift: +7 (A→H)' },
+    { cipher: 'AOL ZAYPRZ PZ H SVJR', answer: 'THE SECRET IS A LEAK', hint: 'Shift: +7 (A→H)' },
+    { cipher: 'P ZAYPRZ AOL NHSHNL', answer: 'I SECRET THE GATEWAY', hint: 'Shift: +7 (A→H)' },
+    { cipher: 'AOL ZAYPRZ VM AOL YLZ', answer: 'THE SECRET OF THE SEED', hint: 'Shift: +7 (A→H)' },
+    { cipher: 'ZAYPRZ AOL ZAYPRZ', answer: 'SECRET THE SECRET', hint: 'Shift: +7 (A→H)' },
+    { cipher: 'AOL ZAYPRZ VM AOL NHSHNL', answer: 'THE SECRET OF THE GATEWAY', hint: 'Shift: +7 (A→H)' },
+  ],
+
+  start: function(onSuccess, onFail) {
+    this.onSuccess = onSuccess || function(){};
+    this.onFail = onFail || function(){};
+    const puzzle = this.puzzles[Math.floor(Math.random() * this.puzzles.length)];
+    this.answer = puzzle.answer;
+    this.timeLeft = this.maxTime;
+    this.active = true;
+
+    document.getElementById('decrypt-cipher').textContent = puzzle.cipher;
+    document.getElementById('decrypt-hint').textContent = puzzle.hint;
+    document.getElementById('decrypt-input').value = '';
+    document.getElementById('decrypt-input').className = 'decrypt-input';
+    document.getElementById('decrypt-result').textContent = '';
+    document.getElementById('decrypt-result').className = 'decrypt-result';
+    document.getElementById('decrypt-overlay').classList.add('active');
+    document.getElementById('decrypt-input').focus();
+
+    this.tick();
+  },
+
+  tick: function() {
+    if (!this.active) return;
+    this.timeLeft -= 0.1;
+    const pct = Math.max(0, (this.timeLeft / this.maxTime) * 100);
+    document.getElementById('decrypt-timer-fill').style.width = pct + '%';
+    document.getElementById('decrypt-time-text').textContent = this.timeLeft.toFixed(1) + 's';
+
+    if (this.timeLeft <= 0) {
+      this.fail('TIME EXPIRED');
+      return;
+    }
+    this.timer = setTimeout(() => this.tick(), 100);
+  },
+
+  check: function(value) {
+    if (!this.active) return;
+    if (value.toUpperCase().trim() === this.answer) {
+      this.success();
+    } else if (value.length >= this.answer.length) {
+      document.getElementById('decrypt-input').className = 'decrypt-input wrong';
+      setTimeout(() => {
+        document.getElementById('decrypt-input').className = 'decrypt-input';
+      }, 400);
+    }
+  },
+
+  success: function() {
+    this.active = false;
+    clearTimeout(this.timer);
+    document.getElementById('decrypt-input').className = 'decrypt-input correct';
+    document.getElementById('decrypt-result').textContent = '✓ DECRYPTION SUCCESSFUL';
+    document.getElementById('decrypt-result').className = 'decrypt-result success';
+    addLog('Decryption successful. Classified data recovered.');
+    setTimeout(() => {
+      document.getElementById('decrypt-overlay').classList.remove('active');
+      this.onSuccess();
+    }, 1200);
+  },
+
+  fail: function(reason) {
+    this.active = false;
+    clearTimeout(this.timer);
+    document.getElementById('decrypt-result').textContent = '✗ ' + (reason || 'DECRYPTION FAILED');
+    document.getElementById('decrypt-result').className = 'decrypt-result fail';
+    addLog('Decryption failed. Security lockdown engaged.');
+    setTimeout(() => {
+      document.getElementById('decrypt-overlay').classList.remove('active');
+      this.onFail();
+    }, 1500);
+  },
+
+  close: function() {
+    this.active = false;
+    clearTimeout(this.timer);
+    document.getElementById('decrypt-overlay').classList.remove('active');
+  }
+};
+
+document.getElementById('decrypt-input').addEventListener('input', function(e) {
+  DecryptGame.check(e.target.value);
+});
+document.getElementById('decrypt-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') DecryptGame.close();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// MINI-GAME: PRESSURE EQUALIZATION
+// ═══════════════════════════════════════════════════════════════
+const PressureGame = {
+  active: false,
+  pressure: 0,
+  targetStart: 0.35,
+  targetWidth: 0.20,
+  isHolding: false,
+  animFrame: null,
+  onSuccess: null,
+  onFail: null,
+
+  start: function(onSuccess, onFail) {
+    this.onSuccess = onSuccess || function(){};
+    this.onFail = onFail || function(){};
+    this.pressure = 0;
+    this.isHolding = false;
+    this.active = true;
+    this.targetStart = 0.30 + Math.random() * 0.30;
+    this.targetWidth = 0.12 + Math.random() * 0.12;
+
+    document.getElementById('pressure-target').style.left = (this.targetStart * 100) + '%';
+    document.getElementById('pressure-target').style.width = (this.targetWidth * 100) + '%';
+    document.getElementById('pressure-fill').style.width = '0%';
+    document.getElementById('pressure-fill').className = 'pressure-fill';
+    document.getElementById('pressure-result').textContent = '';
+    document.getElementById('pressure-overlay').classList.add('active');
+    document.getElementById('pressure-btn').textContent = 'HOLD';
+
+    this.loop();
+  },
+
+  loop: function() {
+    if (!this.active) return;
+    if (this.isHolding) {
+      this.pressure += 0.008;
+    } else {
+      this.pressure -= 0.004;
+    }
+    this.pressure = Math.max(0, Math.min(1, this.pressure));
+
+    const fill = document.getElementById('pressure-fill');
+    fill.style.width = (this.pressure * 100) + '%';
+
+    if (this.pressure > 0.92) {
+      fill.className = 'pressure-fill danger';
+    } else {
+      fill.className = 'pressure-fill';
+    }
+
+    if (this.pressure >= 1.0) {
+      this.fail('OVERPRESSURE — SEAL BROKEN');
+      return;
+    }
+
+    this.animFrame = requestAnimationFrame(() => this.loop());
+  },
+
+  release: function() {
+    if (!this.active) return;
+    const targetEnd = this.targetStart + this.targetWidth;
+    if (this.pressure >= this.targetStart && this.pressure <= targetEnd) {
+      this.success();
+    } else if (this.pressure < this.targetStart) {
+      // Keep going, not enough pressure
+      document.getElementById('pressure-result').textContent = 'INSUFFICIENT PRESSURE';
+      document.getElementById('pressure-result').style.color = 'var(--neon-amber)';
+    } else {
+      this.fail('OVERPRESSURE — SEAL BROKEN');
+    }
+  },
+
+  success: function() {
+    this.active = false;
+    cancelAnimationFrame(this.animFrame);
+    document.getElementById('pressure-result').textContent = '✓ PRESSURE EQUALIZED';
+    document.getElementById('pressure-result').style.color = '#00ff88';
+    addLog('Airlock pressure equalized. Entry granted.');
+    setTimeout(() => {
+      document.getElementById('pressure-overlay').classList.remove('active');
+      this.onSuccess();
+    }, 1200);
+  },
+
+  fail: function(reason) {
+    this.active = false;
+    cancelAnimationFrame(this.animFrame);
+    document.getElementById('pressure-result').textContent = '✗ ' + reason;
+    document.getElementById('pressure-result').style.color = 'var(--neon-red)';
+    addLog('Airlock seal failure. Oxygen leak detected.');
+    state.oxygen -= 15;
+    state.integrity -= 8;
+    updateStats();
+    setTimeout(() => {
+      document.getElementById('pressure-overlay').classList.remove('active');
+      this.onFail();
+    }, 1500);
+  },
+
+  close: function() {
+    this.active = false;
+    cancelAnimationFrame(this.animFrame);
+    document.getElementById('pressure-overlay').classList.remove('active');
+  }
+};
+
+function pressureHoldStart() {
+  if (!PressureGame.active) return;
+  PressureGame.isHolding = true;
+  document.getElementById('pressure-btn').textContent = 'RELEASE';
+}
+function pressureHoldEnd() {
+  if (!PressureGame.active) return;
+  PressureGame.isHolding = false;
+  document.getElementById('pressure-btn').textContent = 'HOLD';
+  PressureGame.release();
+}
+
+// Keyboard support for pressure game
+document.addEventListener('keydown', function(e) {
+  if (e.code === 'Space' && PressureGame.active && !PressureGame.isHolding) {
+    e.preventDefault();
+    pressureHoldStart();
+  }
+});
+document.addEventListener('keyup', function(e) {
+  if (e.code === 'Space' && PressureGame.active && PressureGame.isHolding) {
+    e.preventDefault();
+    pressureHoldEnd();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SONAR VISUALIZATION
+// ═══════════════════════════════════════════════════════════════
+const SonarSystem = {
+  canvas: null,
+  ctx: null,
+  animId: null,
+  rings: [],
+  blips: [],
+  angle: 0,
+
+  init: function() {
+    this.canvas = document.getElementById('sonar-canvas');
+    this.ctx = this.canvas.getContext('2d');
+  },
+
+  start: function() {
+    if (!this.ctx) this.init();
+    document.getElementById('sonar-overlay').classList.add('active');
+    this.rings = [];
+    this.blips = [
+      { angle: 0.3, dist: 0.6, size: 4, intensity: 1 },
+      { angle: 2.1, dist: 0.4, size: 3, intensity: 0.7 },
+      { angle: 4.5, dist: 0.75, size: 5, intensity: 0.9 },
+    ];
+    this.angle = 0;
+    this.loop();
+  },
+
+  loop: function() {
+    if (!document.getElementById('sonar-overlay').classList.contains('active')) return;
+    const c = this.ctx;
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    const cx = w / 2;
+    const cy = h / 2;
+    const maxR = Math.min(w, h) / 2 - 10;
+
+    c.clearRect(0, 0, w, h);
+
+    // Grid rings
+    c.strokeStyle = 'rgba(0, 229, 255, 0.08)';
+    c.lineWidth = 1;
+    for (let i = 1; i <= 4; i++) {
+      c.beginPath();
+      c.arc(cx, cy, maxR * i / 4, 0, Math.PI * 2);
+      c.stroke();
+    }
+
+    // Crosshairs
+    c.strokeStyle = 'rgba(0, 229, 255, 0.06)';
+    c.beginPath();
+    c.moveTo(cx, cy - maxR); c.lineTo(cx, cy + maxR);
+    c.moveTo(cx - maxR, cy); c.lineTo(cx + maxR, cy);
+    c.stroke();
+
+    // Sweep
+    this.angle += 0.025;
+    const sweepX = cx + Math.cos(this.angle) * maxR;
+    const sweepY = cy + Math.sin(this.angle) * maxR;
+    const grad = c.createLinearGradient(cx, cy, sweepX, sweepY);
+    grad.addColorStop(0, 'rgba(0, 229, 255, 0)');
+    grad.addColorStop(0.7, 'rgba(0, 229, 255, 0.03)');
+    grad.addColorStop(1, 'rgba(0, 229, 255, 0.15)');
+    c.fillStyle = grad;
+    c.beginPath();
+    c.moveTo(cx, cy);
+    c.arc(cx, cy, maxR, this.angle - 0.4, this.angle);
+    c.lineTo(cx, cy);
+    c.fill();
+
+    // Sweep line
+    c.strokeStyle = 'rgba(0, 229, 255, 0.4)';
+    c.lineWidth = 1.5;
+    c.shadowColor = 'rgba(0, 229, 255, 0.6)';
+    c.shadowBlur = 8;
+    c.beginPath();
+    c.moveTo(cx, cy);
+    c.lineTo(sweepX, sweepY);
+    c.stroke();
+    c.shadowBlur = 0;
+
+    // Blips
+    this.blips.forEach(blip => {
+      const bx = cx + Math.cos(blip.angle) * maxR * blip.dist;
+      const by = cy + Math.sin(blip.angle) * maxR * blip.dist;
+      const distToSweep = Math.abs(((blip.angle - this.angle + Math.PI * 2) % (Math.PI * 2)) - Math.PI);
+      const isLit = distToSweep < 0.3;
+      const alpha = isLit ? blip.intensity : blip.intensity * 0.15;
+
+      c.fillStyle = isLit ? 'rgba(255, 51, 102, ' + alpha + ')' : 'rgba(0, 229, 255, ' + alpha + ')';
+      c.shadowColor = isLit ? 'rgba(255, 51, 102, 0.8)' : 'rgba(0, 229, 255, 0.5)';
+      c.shadowBlur = isLit ? 12 : 4;
+      c.beginPath();
+      c.arc(bx, by, blip.size, 0, Math.PI * 2);
+      c.fill();
+      c.shadowBlur = 0;
+
+      // Echo ring on hit
+      if (isLit && Math.random() < 0.1) {
+        this.rings.push({ x: bx, y: by, r: 4, alpha: 0.6 });
+      }
+    });
+
+    // Echo rings
+    for (let i = this.rings.length - 1; i >= 0; i--) {
+      const r = this.rings[i];
+      r.r += 1.5;
+      r.alpha -= 0.015;
+      if (r.alpha <= 0) {
+        this.rings.splice(i, 1);
+        continue;
+      }
+      c.strokeStyle = 'rgba(255, 51, 102, ' + r.alpha + ')';
+      c.lineWidth = 1;
+      c.beginPath();
+      c.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+      c.stroke();
+    }
+
+    // Center dot
+    c.fillStyle = 'rgba(0, 229, 255, 0.6)';
+    c.beginPath();
+    c.arc(cx, cy, 3, 0, Math.PI * 2);
+    c.fill();
+
+    this.animId = requestAnimationFrame(() => this.loop());
+  },
+
+  close: function() {
+    document.getElementById('sonar-overlay').classList.remove('active');
+    cancelAnimationFrame(this.animId);
+  }
+};
+
+function closeSonar() {
+  SonarSystem.close();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCENE-SPECIFIC MINI-GAME TRIGGERS
+// ═══════════════════════════════════════════════════════════════
+function triggerDecrypt(successScene, failScene) {
+  DecryptGame.start(
+    function() { loadScene(successScene); },
+    function() { loadScene(failScene); }
+  );
+}
+
+function triggerPressure(successScene, failScene) {
+  PressureGame.start(
+    function() { loadScene(successScene); },
+    function() { loadScene(failScene); }
+  );
+}
+
+function triggerSonar() {
+  SonarSystem.start();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WEB AUDIO AMBIENT SOUNDSCAPE
+// ═══════════════════════════════════════════════════════════════
+const AudioEngine = {
+  ctx: null,
+  masterGain: null,
+  sources: {},
+  isPlaying: false,
+
+  init: function() {
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.value = 0.35;
+      this.masterGain.connect(this.ctx.destination);
+
+      // Compressor to prevent clipping
+      const compressor = this.ctx.createDynamicsCompressor();
+      compressor.threshold.value = -24;
+      compressor.knee.value = 30;
+      compressor.ratio.value = 12;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.25;
+      this.masterGain.connect(compressor);
+      compressor.connect(this.ctx.destination);
+
+      return true;
+    } catch(e) {
+      console.log('Web Audio not supported');
+      return false;
+    }
+  },
+
+  start: function() {
+    if (!this.ctx) this.init();
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.isPlaying) return;
+    this.isPlaying = true;
+
+    this.startDrone();
+    this.startIceGroans();
+    this.startHeartbeat();
+    this.startStatic();
+    this.startWind();
+  },
+
+  // ── Deep Facility Drone ──
+  startDrone: function() {
+    const droneGain = this.ctx.createGain();
+    droneGain.gain.value = 0.15;
+    droneGain.connect(this.masterGain);
+
+    // Multiple oscillators for rich drone texture
+    const freqs = [55, 82.5, 110, 165];
+    freqs.forEach((f, i) => {
+      const osc = this.ctx.createOscillator();
+      osc.type = i % 2 === 0 ? 'sine' : 'triangle';
+      osc.frequency.value = f;
+
+      const gain = this.ctx.createGain();
+      gain.gain.value = 0.3 / freqs.length;
+
+      osc.connect(gain);
+      gain.connect(droneGain);
+      osc.start();
+
+      // Slow LFO modulation
+      const lfo = this.ctx.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = 0.05 + Math.random() * 0.1;
+      const lfoGain = this.ctx.createGain();
+      lfoGain.gain.value = 0.02;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+      lfo.start();
+    });
+
+    this.sources.drone = droneGain;
+  },
+
+  // ── Random Ice Groans & Metallic Clanks ──
+  startIceGroans: function() {
+    const triggerGroan = () => {
+      if (!this.isPlaying) return;
+
+      const duration = 2 + Math.random() * 4;
+      const now = this.ctx.currentTime;
+
+      // Noise buffer for groan texture
+      const bufferSize = this.ctx.sampleRate * duration;
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+      }
+
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      // Bandpass filter for ice resonance
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 80 + Math.random() * 200;
+      filter.Q.value = 2;
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.08 + Math.random() * 0.06, now + 0.5);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+
+      noise.start(now);
+      noise.stop(now + duration);
+
+      // Schedule next groan
+      const nextDelay = 8 + Math.random() * 20;
+      setTimeout(triggerGroan, nextDelay * 1000);
+    };
+
+    triggerGroan();
+  },
+
+  // ── Sphere Heartbeat ──
+  startHeartbeat: function() {
+    const baseInterval = 4.7; // matches the story
+
+    const triggerPulse = () => {
+      if (!this.isPlaying) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = 42;
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+      // Subtle harmonic
+      const osc2 = this.ctx.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.value = 84;
+      const gain2 = this.ctx.createGain();
+      gain2.gain.setValueAtTime(0, now);
+      gain2.gain.linearRampToValueAtTime(0.04, now + 0.1);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc2.connect(gain2);
+      gain2.connect(this.masterGain);
+
+      osc.start(now);
+      osc.stop(now + 1);
+      osc2.start(now);
+      osc2.stop(now + 0.8);
+
+      // Speed up as story progresses
+      const cycleFactor = Math.min(state.cycle / 50, 0.5);
+      const interval = baseInterval * (1 - cycleFactor);
+      setTimeout(triggerPulse, interval * 1000);
+    };
+
+    triggerPulse();
+  },
+
+  // ── Radio Static Bursts ──
+  startStatic: function() {
+    const triggerStatic = () => {
+      if (!this.isPlaying) return;
+
+      const now = this.ctx.currentTime;
+      const duration = 0.3 + Math.random() * 0.5;
+
+      const bufferSize = this.ctx.sampleRate * duration;
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1);
+      }
+
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 2000;
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.03, now + 0.05);
+      gain.gain.linearRampToValueAtTime(0, now + duration);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+
+      noise.start(now);
+      noise.stop(now + duration);
+
+      const nextDelay = 15 + Math.random() * 40;
+      setTimeout(triggerStatic, nextDelay * 1000);
+    };
+
+    triggerStatic();
+  },
+
+  // ── Ice Wind / Airflow ──
+  startWind: function() {
+    const bufferSize = 2 * this.ctx.sampleRate;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    // Pink noise approximation
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      b3 = 0.86650 * b3 + white * 0.3104856;
+      b4 = 0.55000 * b4 + white * 0.5329522;
+      b5 = -0.7616 * b5 - white * 0.0168980;
+      data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.02;
+      b6 = white * 0.115926;
+    }
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    noise.loop = true;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 300;
+    filter.Q.value = 0.5;
+
+    const gain = this.ctx.createGain();
+    gain.gain.value = 0.04;
+
+    // Slow filter sweep for shifting wind
+    const lfo = this.ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.02;
+    const lfoGain = this.ctx.createGain();
+    lfoGain.gain.value = 150;
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+    lfo.start();
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+    noise.start();
+
+    this.sources.wind = { noise, gain, lfo };
+  },
+
+  // ── Scene-specific audio triggers ──
+  playSceneAudio: function(sceneId) {
+    if (!this.isPlaying) return;
+
+    const now = this.ctx.currentTime;
+
+    // Radio voice effect for radio scenes
+    if (sceneId === 'radio') {
+      this.playRadioVoice();
+    }
+
+    // Deep rumble for breach/descent scenes
+    if (sceneId === 'breach' || sceneId === 'enter_door') {
+      this.playDeepRumble();
+    }
+
+    // High-pitched alert for endings
+    if (sceneId.startsWith('ending') || sceneId === 'detonate') {
+      this.playAlertTone();
+    }
+  },
+
+  playRadioVoice: function() {
+    const now = this.ctx.currentTime;
+    const freqs = [440, 554, 659, 880];
+    freqs.forEach((f, i) => {
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.02, now + 0.1 + i * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(now);
+      osc.stop(now + 1.5);
+    });
+  },
+
+  playDeepRumble: function() {
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 30;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.1, now + 2);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 8);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(now);
+    osc.stop(now + 8);
+  },
+
+  playAlertTone: function() {
+    const now = this.ctx.currentTime;
+    for (let i = 0; i < 5; i++) {
+      const osc = this.ctx.createOscillator();
+      osc.type = 'square';
+      osc.frequency.value = 800 + i * 100;
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0, now + i * 0.3);
+      gain.gain.linearRampToValueAtTime(0.04, now + i * 0.3 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.3 + 0.3);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(now + i * 0.3);
+      osc.stop(now + i * 0.3 + 0.3);
+    }
+  },
+
+  setVolume: function(val) {
+    if (this.masterGain) {
+      this.masterGain.gain.linearRampToValueAtTime(val, this.ctx.currentTime + 0.5);
+    }
+  }
+};
+
+// Start audio when game starts
+const originalStartGame = startGame;
+startGame = function() {
+  originalStartGame();
+  AudioEngineV2.start();
+  VoiceEngine.init();
+  updateCrew();
+  renderChapterPanel();
+};
+
+// Trigger scene-specific audio + chapter updates + character discoveries + interactions
+const originalLoadScene = loadScene;
+loadScene = function(sceneId) {
+  originalLoadScene(sceneId);
+  AudioEngineV2.playSceneAudio(sceneId);
+  renderChapterPanel();
+
+  // Reset scan button
+  var scanBtn = document.getElementById('scan-btn');
+  if (scanBtn) {
+    scanBtn.disabled = false;
+    scanBtn.textContent = '🔍 Deep Scan (-5 PWR)';
+  }
+  // Hide scan result
+  var scanResult = document.getElementById('scan-result');
+  if (scanResult) scanResult.classList.remove('visible');
+
+  // Stop timed choices
+  TimedChoiceSystem.stop();
+
+  // Show comm messages for this scene
+  showCommMessages(sceneId);
+
+  // Setup inventory drag
+  setupInventoryDrag();
+
+  // Update psych state
+  PsychState.update();
+
+  // Timed choices for high-tension scenes
+  if (sceneId === 'breach' || sceneId === 'act5_inner') {
+    TimedChoiceSystem.start(sceneId, 'seal_dome');
+  }
+
+  if (sceneId === 'logs') { discoverCharacter('tanaka'); discoverCharacter('webb'); }
+  if (sceneId === 'armory') { discoverCharacter('callahan'); }
+  if (sceneId === 'radio') { discoverCharacter('reyes'); }
+  if (sceneId === 'classified' || sceneId === 'breach' || sceneId === 'approach_sphere') { discoverCharacter('callanav'); }
+};
+</script>
+</body>
+</html>
