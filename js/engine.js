@@ -12,11 +12,11 @@ const GlacierEngine = (function() {
 
     // Character definitions (loaded from lore/characters.md or hardcoded fallback)
     const CHARACTERS = {
-        kael: { name: "Kael Vance", color: "#00f0ff", avatar: "", bio: "Commander" },
-        marcus: { name: "Marcus Thorne", color: "#60a5fa", avatar: "", bio: "Engineer" },
-        elara: { name: "Elara Synn", color: "#f472b6", avatar: "", bio: "Xenobiologist" },
-        nyx: { name: "Nyx Oriel", color: "#a78bfa", avatar: "", bio: "Pilot" },
-        sera: { name: "Sera Voss", color: "#34d399", avatar: "", bio: "Medic" },
+        kael: { name: "Kael Vance", color: "#00f0ff", avatar: "visuals/chars/kael.png", bio: "Commander" },
+        marcus: { name: "Marcus Thorne", color: "#60a5fa", avatar: "visuals/chars/marcus.png", bio: "Engineer" },
+        elara: { name: "Elara Synn", color: "#f472b6", avatar: "visuals/chars/elara.png", bio: "Xenobiologist" },
+        nyx: { name: "Nyx Oriel", color: "#a78bfa", avatar: "visuals/chars/nyx.png", bio: "Pilot" },
+        sera: { name: "Sera Voss", color: "#34d399", avatar: "visuals/chars/sera.png", bio: "Medic" },
         entity: { name: "The Entity", color: "#d4af37", avatar: "", bio: "Ancient Consciousness" }
     };
 
