@@ -1,60 +1,42 @@
 ---
 id: ch5-awakening
-title: "Chapter 5: The Spires Rise"
-location: "Surface, Grid 7-Alpha"
+title: "The Awakening"
+location: "Outpost Erebus — Transformation"
 time: "Cycle 1, Hour 12"
-image: visuals/ch5/ancient-spires.jpg
+image: visuals/ch5/awakening.png
 type: story
 ---
 
 > **NARRATION**
-> You surface from the crevasse into a changed world.
+> The entity touched the central crystal, and the entire moon shuddered. Across the glacier, dormant structures began to rise—ancient spires of black stone and blue light, piercing the ice like waking giants.
 
 > **NARRATION**
-> The glacier fields are moving. Not melting—rearranging. Ancient mechanisms buried beneath kilometers of ice are activating, driven by the same consciousness that spoke to you in the cavern.
+> Marcus stared at his scanner, disbelief etched across his face. "The entire moon is a machine. A machine the size of a world, and it's been sleeping."
 
 > **NARRATION**
-> Across the horizon, spires rise. Not built. Grown. Crystalline architecture that predates human civilization by millions of years, now pushing through the ice like teeth through gum.
-
-> **DIALOGUE: Commander Voss** *stunned*
-> "Satellite imagery from six hours ago showed nothing. These weren't here. They grew. In hours."
+> The entity turned to Kael. "Your kind has a choice now. We can teach you to wield the ice, the stars, the spaces between atoms. Or you may leave, and forget. But the awakening cannot be undone."
 
 > **NARRATION**
-> The outpost is visible in the distance. Its black spires look pathetic now, temporary toys against the majesty of what the glacier moon truly is.
+> Kael looked at his team—exhausted, terrified, but alive with wonder. He made the only choice a human could make.
 
 > **NARRATION**
-> A garden. A nursery. A testing ground. And humanity has just been noticed by the gardener.
+> "Teach us," he said. "Teach us everything."
 
-> **DIALOGUE: The Entity** *everywhere*
-> "We seeded this world when your ancestors were single cells. We waited through ice ages. Through stellar cycles. Through the silence between galaxies. We can wait longer. Or... we can begin."
+> **DIALOGUE: Marcus Thorne** *stunned*
+> "The energy readings... this changes everything. Faster-than-light travel, infinite power..."
 
-> **NARRATION**
-> The choice is yours. Not Earth's. Not the corporation that funded GL-7. Yours.
+> **DIALOGUE: Sera Voss** *cautious*
+> "Or infinite destruction, if we're not careful."
 
-> **NARRATION**
-> The spires pulse in unison. A heartbeat. An invitation. A warning.
+> **DIALOGUE: Kael Vance** *resolved*
+> "Then we'll be careful. Together."
 
 ## Choices
 
-- **Accept the invitation—learn from them** → ending-harmony
-  *Effects: alienAffinity +5, leadership +3, courage +2*
-  *Condition: stat alienAffinity >= 3*
-  *Flavor: The spires sing. You sing back.*
+- **Begin the learning protocol** → ch1-ice-frontier
+  *Effects: courage +1, leadership +1, alienAffinity +1*
+  *Flavor: The spires sing. Humanity's second chapter begins.*
 
-- **Negotiate—technology for territory** → ending-trade
-  *Effects: tech +3, leadership +2*
-  *Flavor: Cold commerce among the stars. The entity considers your offer.*
-
-- **Warn Earth—send the truth home** → ending-warning
-  *Effects: courage +3, leadership +2*
-  *Flavor: The truth is a weapon. And a burden.*
-
-- **Destroy the spires—protect humanity's claim** → ending-destruction
-  *Effects: courage +2, alienAffinity -5*
-  *Condition: stat courage >= 4*
-  *Flavor: The entity does not resist. It simply... waits. It has time. You do not.*
-
-## World Update
-reactorFixed: false
-aliensContacted: true
-outpostDefenses: 10
+- **To be continued...** → ch1-ice-frontier
+  *Effects: none*
+  *Flavor: End of current arc. More to come.*

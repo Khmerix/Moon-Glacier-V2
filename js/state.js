@@ -7,7 +7,7 @@ const GlacierState = (function() {
 
     // Default state schema
     const defaults = {
-        currentChapter: 'ch1-landing',
+        currentChapter: 'ch1-ice-frontier',
         history: [],           // Array of {chapter, choiceId, timestamp}
         flags: {},             // Boolean story flags
         stats: {               // Numeric relationship/attribute scores

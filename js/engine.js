@@ -12,11 +12,12 @@ const GlacierEngine = (function() {
 
     // Character definitions (loaded from lore/characters.md or hardcoded fallback)
     const CHARACTERS = {
-        voss: { name: "Commander Elias Voss", color: "#00d4ff", avatar: "visuals/chars/voss.png", bio: "Mission Commander" },
-        elara: { name: "Dr. Elara Chen", color: "#ff6b9d", avatar: "visuals/chars/elara.png", bio: "Xenobiologist" },
-        fenwick: { name: "Dr. Silas Fenwick", color: "#a0a0a0", avatar: "visuals/chars/fenwick.png", bio: "Missing Geologist" },
-        entity: { name: "The Entity", color: "#d4af37", avatar: "visuals/chars/entity.png", bio: "Resonant Interface" },
-        system: { name: "GL-7 System", color: "#ff4757", bio: "Outpost AI" }
+        kael: { name: "Kael Vance", color: "#00f0ff", avatar: "", bio: "Commander" },
+        marcus: { name: "Marcus Thorne", color: "#60a5fa", avatar: "", bio: "Engineer" },
+        elara: { name: "Elara Synn", color: "#f472b6", avatar: "", bio: "Xenobiologist" },
+        nyx: { name: "Nyx Oriel", color: "#a78bfa", avatar: "", bio: "Pilot" },
+        sera: { name: "Sera Voss", color: "#34d399", avatar: "", bio: "Medic" },
+        entity: { name: "The Entity", color: "#d4af37", avatar: "", bio: "Ancient Consciousness" }
     };
 
     function init() {
@@ -126,7 +127,9 @@ const GlacierEngine = (function() {
 
         if (block.type === 'dialogue') {
             const charData = CHARACTERS[block.char] || { name: block.char, color: '#fff' };
-            const avatarImg = charData.avatar ? `<img class="char-avatar" src="${charData.avatar}" alt="${charData.name}" onerror="this.style.display='none'">` : '';
+            const avatarImg = charData.avatar
+                ? `<img class="char-avatar" src="${charData.avatar}" alt="${charData.name}" onerror="this.style.display='none'">`
+                : `<div class="char-avatar" style="background:linear-gradient(135deg,${charData.color},#1e293b);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;text-shadow:0 0 4px rgba(0,0,0,0.5);">${charData.name.charAt(0)}</div>`;
             const speakBtn = typeof window.speakDialogue === 'function' ? `<button class="speak-btn" onclick="window.speakDialogue('${block.text.replace(/'/g, "\\'")}', this)" title="Read aloud">&#9654;</button>` : '';
             el.innerHTML = `
                 <div class="dialogue-header" style="--char-color: ${charData.color}">
@@ -336,7 +339,7 @@ const GlacierEngine = (function() {
         if (confirm('WARNING: This will erase ALL progress, choices, and unlocked endings.\n\nAre you certain?')) {
             GlacierState.reset();
             chapterCache = {};
-            loadAndRender('ch1-landing');
+            loadAndRender('ch1-ice-frontier');
             toggleMenu();
         }
     }

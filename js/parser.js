@@ -29,7 +29,13 @@ const GlacierParser = (function() {
             'silas fenwick': 'fenwick',
             'the entity': 'entity',
             'gl-7 system': 'system',
-            'gl7 system': 'system'
+            'gl7 system': 'system',
+            'kael vance': 'kael',
+            'commander kael vance': 'kael',
+            'marcus thorne': 'marcus',
+            'elara synn': 'elara',
+            'nyx oriel': 'nyx',
+            'sera voss': 'sera'
         };
         const lower = name.toLowerCase().trim();
         return map[lower] || lower.replace(/\s+/g, '');
