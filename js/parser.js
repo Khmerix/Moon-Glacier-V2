@@ -61,6 +61,14 @@ const GlacierParser = (function() {
         let currentBlock = null;
         let frontmatterBuffer = [];
         let choiceBuffer = null;
+        let pendingBlock = null;
+
+        function flushPendingBlock() {
+            if (pendingBlock) {
+                chapter.content.push(pendingBlock);
+                pendingBlock = null;
+            }
+        }
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trimRight();
@@ -87,12 +95,14 @@ const GlacierParser = (function() {
 
             // Choices section header
             if (trimmed.match(/^#{1,3}\s*choices?/i)) {
+                flushPendingBlock();
                 mode = 'choices';
                 continue;
             }
 
             // World update block
             if (trimmed.match(/^#{1,3}\s*world[-_]?update/i)) {
+                flushPendingBlock();
                 mode = 'worldupdate';
                 continue;
             }
@@ -107,44 +117,62 @@ const GlacierParser = (function() {
                     const directiveMatch = content.match(/^\*\*([A-Z]+)(?::\s*(.+?))?\*\*(.*)$/);
 
                     if (directiveMatch) {
+                        flushPendingBlock();
                         const blockType = directiveMatch[1].toLowerCase();
                         const blockMeta = directiveMatch[2] ? directiveMatch[2].trim() : '';
-                        const blockText = directiveMatch[3].trim();
+                        let blockText = directiveMatch[3].trim();
+
+                        // Extract emotion if it's outside the ** tags: *emotion*
+                        let emotion = '';
+                        const emotionMatch = blockText.match(/^\*(.+?)\*\s*(.*)$/);
+                        if (emotionMatch) {
+                            emotion = emotionMatch[1].trim();
+                            blockText = emotionMatch[2].trim();
+                        }
 
                         if (blockType === 'narration') {
-                            chapter.content.push({
+                            pendingBlock = {
                                 type: 'narration',
                                 text: blockText || blockMeta
-                            });
+                            };
                         } else if (blockType === 'dialogue') {
                             const charMatch = blockMeta.match(/^(.+?)(?:\s+\*(.+?)\*)?$/);
                             const rawName = charMatch ? charMatch[1].trim() : blockMeta.trim();
-                            chapter.content.push({
+                            pendingBlock = {
                                 type: 'dialogue',
                                 char: normalizeCharKey(rawName),
                                 text: blockText,
-                                emotion: charMatch && charMatch[2] ? charMatch[2].trim() : ''
-                            });
+                                emotion: emotion || (charMatch && charMatch[2] ? charMatch[2].trim() : '')
+                            };
                         } else if (blockType === 'system') {
-                            chapter.content.push({
+                            pendingBlock = {
                                 type: 'dialogue',
                                 char: 'system',
                                 text: blockText || blockMeta
-                            });
+                            };
                         }
                     } else {
-                        // Plain blockquote = narration
-                        chapter.content.push({
-                            type: 'narration',
-                            text: content
-                        });
+                        // Plain blockquote line — append to pending block or create narration
+                        if (pendingBlock) {
+                            if (pendingBlock.text) {
+                                pendingBlock.text += '\n' + content;
+                            } else {
+                                pendingBlock.text = content;
+                            }
+                        } else {
+                            chapter.content.push({
+                                type: 'narration',
+                                text: content
+                            });
+                        }
                     }
-                }
-
-                // Image reference: ![alt](path)
-                const imgMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
-                if (imgMatch && !chapter.image) {
-                    chapter.image = imgMatch[2];
+                } else {
+                    flushPendingBlock();
+                    // Image reference: ![alt](path)
+                    const imgMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
+                    if (imgMatch && !chapter.image) {
+                        chapter.image = imgMatch[2];
+                    }
                 }
             }
 
@@ -221,8 +249,9 @@ const GlacierParser = (function() {
             }
         }
 
-        // Push last choice
+        // Push last choice and pending block
         if (choiceBuffer) chapter.choices.push(choiceBuffer);
+        if (pendingBlock) chapter.content.push(pendingBlock);
 
         return chapter;
     }
@@ -243,7 +272,14 @@ const GlacierParser = (function() {
                 currentVal += '\n' + line.trim();
             }
         }
-        if (currentKey) result[currentKey] = currentVal.trim();
+        if (currentKey) {
+            let val = currentVal.trim();
+            // Strip surrounding quotes
+            if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+                val = val.slice(1, -1);
+            }
+            result[currentKey] = val;
+        }
         return result;
     }
 

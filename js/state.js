@@ -57,10 +57,25 @@ const GlacierState = (function() {
             const raw = localStorage.getItem(SAVE_KEY);
             if (!raw) return null;
             const parsed = JSON.parse(raw);
-            // Restore Sets
-            if (parsed.visited && parsed.visited.data) parsed.visited = new Set(parsed.visited.data);
-            if (parsed.endingsSeen && parsed.endingsSeen.data) parsed.endingsSeen = new Set(parsed.endingsSeen.data);
-            else if (Array.isArray(parsed.endingsSeen)) parsed.endingsSeen = new Set(parsed.endingsSeen);
+            // Restore Sets (handle old format, corrupted format, and proper format)
+            if (parsed.visited) {
+                if (parsed.visited.data) {
+                    parsed.visited = new Set(parsed.visited.data);
+                } else if (Array.isArray(parsed.visited)) {
+                    parsed.visited = new Set(parsed.visited);
+                } else {
+                    parsed.visited = new Set();
+                }
+            }
+            if (parsed.endingsSeen) {
+                if (parsed.endingsSeen.data) {
+                    parsed.endingsSeen = new Set(parsed.endingsSeen.data);
+                } else if (Array.isArray(parsed.endingsSeen)) {
+                    parsed.endingsSeen = new Set(parsed.endingsSeen);
+                } else {
+                    parsed.endingsSeen = new Set();
+                }
+            }
             return parsed;
         } catch (e) {
             console.warn('Failed to load save:', e);
@@ -70,7 +85,10 @@ const GlacierState = (function() {
 
     function save() {
         try {
-            localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+            localStorage.setItem(SAVE_KEY, JSON.stringify(state, (key, val) => {
+                if (val instanceof Set) return { __type: 'Set', data: [...val] };
+                return val;
+            }));
         } catch (e) {
             console.warn('Failed to save:', e);
         }
