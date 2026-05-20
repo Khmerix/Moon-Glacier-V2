@@ -257,7 +257,7 @@ const GlacierEngine = (function() {
             const avatarImg = charData.avatar
                 ? `<img class="char-avatar" src="${charData.avatar}" alt="${charData.name}" onerror="this.style.display='none'">`
                 : `<div class="char-avatar" style="background:linear-gradient(135deg,${charData.color},#1e293b);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;text-shadow:0 0 4px rgba(0,0,0,0.5);">${charData.name.charAt(0)}</div>`;
-            const speakBtn = typeof window.speakDialogue === 'function' ? `<button class="speak-btn" onclick="window.speakDialogue('${block.text.replace(/'/g, "\\'")}', this)" title="Read aloud">&#9654;</button>` : '';
+            const speakBtn = typeof window.speakDialogue === 'function' ? `<button class="speak-btn" onclick="window.speakDialogue('${block.text.replace(/'/g, "\\'").replace(/\n/g, ' ')}', this)" title="Read aloud">&#9654;</button>` : '';
             const isEntity = block.char === 'entity';
             if (isEntity) el.classList.add('entity-dialogue');
             el.innerHTML = `
