@@ -55,11 +55,11 @@ const GlacierEngine = (function() {
         nyx: { name: "Nyx Oriel", color: "#a78bfa", avatar: "visuals/chars/nyx.png", bio: "Pilot" },
         sera: { name: "Sera Voss", color: "#34d399", avatar: "visuals/chars/sera.png", bio: "Medic" },
         entity: { name: "The Entity", color: "#d4af37", avatar: "", bio: "Ancient Consciousness" },
-        voss: { name: "Director August Voss", color: "#ef4444", avatar: "", bio: "Helix Corp Xenological Division" },
-        tanaka: { name: "Captain Yuki Tanaka", color: "#a8a29e", avatar: "", bio: "UN Expedition Leader — Presumed Dead" },
-        fenwick: { name: "Dr. Silas Fenwick", color: "#84cc16", avatar: "", bio: "Outpost Geologist — Transformed" },
-        broker: { name: "Jace Kovacs", color: "#f97316", avatar: "", bio: "Black Market Supplier" },
-        echo: { name: "Echo-Seven", color: "#06b6d4", avatar: "", bio: "Pre-Collapse AI Construct" }
+        voss: { name: "Director August Voss", color: "#ef4444", avatar: "visuals/chars/voss.png", bio: "Helix Corp Xenological Division" },
+        tanaka: { name: "Captain Yuki Tanaka", color: "#a8a29e", avatar: "visuals/chars/tanaka.png", bio: "UN Expedition Leader — Presumed Dead" },
+        fenwick: { name: "Dr. Silas Fenwick", color: "#84cc16", avatar: "visuals/chars/fenwick.png", bio: "Outpost Geologist — Transformed" },
+        broker: { name: "Jace Kovacs", color: "#f97316", avatar: "visuals/chars/broker.png", bio: "Black Market Supplier" },
+        echo: { name: "Echo-Seven", color: "#06b6d4", avatar: "visuals/chars/echo.png", bio: "Pre-Collapse AI Construct" }
     };
 
     function init() {
@@ -80,6 +80,14 @@ const GlacierEngine = (function() {
         document.getElementById('btn-reset').addEventListener('click', confirmReset);
         document.getElementById('btn-close-menu').addEventListener('click', toggleMenu);
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleMenu(); });
+
+        // TTS delegated click listener — avoids inline onclick escaping hell
+        dom.storyContent.addEventListener('click', (e) => {
+            const btn = e.target.closest('.speak-btn');
+            if (!btn || !btn.dataset.tts) return;
+            e.stopPropagation();
+            window.speakDialogue(btn.dataset.tts, btn);
+        });
 
         initStarfield();
         initHolographicTilt();
@@ -262,7 +270,12 @@ const GlacierEngine = (function() {
             const avatarImg = charData.avatar
                 ? `<img class="char-avatar" src="${charData.avatar}" alt="${charData.name}" onerror="this.style.display='none'">`
                 : `<div class="char-avatar" style="background:linear-gradient(135deg,${charData.color},#1e293b);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;text-shadow:0 0 4px rgba(0,0,0,0.5);">${charData.name.charAt(0)}</div>`;
-            const speakBtn = typeof window.speakDialogue === 'function' ? `<button class="speak-btn" onclick="window.speakDialogue('${block.text.replace(/'/g, "\\'").replace(/\n/g, ' ')}', this)" title="Read aloud">&#9654;</button>` : '';
+            const safeText = block.text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+            const speakBtn = typeof window.speakDialogue === 'function' ? `<button class="speak-btn" data-tts="${safeText}" title="Read aloud">&#9654;</button>` : '';
             const isEntity = block.char === 'entity';
             if (isEntity) el.classList.add('entity-dialogue');
             el.innerHTML = `
