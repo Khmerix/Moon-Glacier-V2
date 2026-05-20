@@ -35,7 +35,22 @@ const GlacierParser = (function() {
             'marcus thorne': 'marcus',
             'elara synn': 'elara',
             'nyx oriel': 'nyx',
-            'sera voss': 'sera'
+            'sera voss': 'sera',
+            'director august voss': 'voss',
+            'august voss': 'voss',
+            'director voss': 'voss',
+            'captain yuki tanaka': 'tanaka',
+            'yuki tanaka': 'tanaka',
+            'captain tanaka': 'tanaka',
+            'dr. silas fenwick': 'fenwick',
+            'dr silas fenwick': 'fenwick',
+            'silas fenwick': 'fenwick',
+            'jace kovacs': 'broker',
+            'the broker': 'broker',
+            'kovacs': 'broker',
+            'echo-seven': 'echo',
+            'echo seven': 'echo',
+            'echo7': 'echo'
         };
         const lower = name.toLowerCase().trim();
         return map[lower] || lower.replace(/\s+/g, '');

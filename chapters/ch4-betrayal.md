@@ -8,28 +8,40 @@ type: story
 ---
 
 > **NARRATION**
-> Marcus fired. Kael was already moving. The round tore through his shoulder instead of his heart, spinning him against the bulkhead. Pain exploded in white-hot arcs.
+> Marcus fired. The muzzle flash lit the room like lightning, and Kael felt the round punch through his shoulder before he heard the crack of the gun.
 
 > **NARRATION**
-> Elara screamed. Not in fear—in fury. She threw her scanner. It struck Marcus's gun hand, knocking the weapon clattering across the floor.
+> It didn't hurt at first. Just pressure. A hard shove from something that shouldn't exist inside his body. Then the pain arrived, white-hot and electric, racing down his arm and up his neck in waves that made his vision strobe.
 
 > **NARRATION**
-> Marcus didn't go for the gun. He went for the elevator. The hidden Level 9. Where Helix Corp had already built a extraction chamber for whatever lived below.
+> He looked down. The entry wound was a small black hole in his jacket. The exit wound sprayed arterial blood across the console behind him—a red arc, still steaming in the freezing air.
+
+> **DIALOGUE: Kael Vance** *shocked*
+> "Marcus... you shot me. You actually shot me."
 
 > **DIALOGUE: Marcus Thorne** *desperate*
-> "You don't understand! Helix has my family! They have everyone I love! If I don't bring them a sample, they'll kill them all!"
+> "I didn't want to! God, Kael, you know me—you know I didn't want to! But Helix has my family! They have photos of my sister's kids! They said if I don't bring them a sample by dawn, they'll mail me pieces!"
+
+> **NARRATION**
+> Elara screamed. Not in fear—in fury. She threw her scanner. It struck Marcus's gun hand, shattering two fingers. The pistol clattered across the floor, spinning through Kael's blood.
+
+> **NARRATION**
+> Marcus didn't go for the gun. He ran. Limning, clutching his broken hand, he sprinted for the service elevator. The hidden Level 9. Where Helix had already built an extraction chamber for whatever lived below.
+
+> **NARRATION**
+> Kael pressed his palm against the wound. Blood pumped between his fingers in rhythmic spurts—his heartbeat, visible, countable, finite. He had maybe an hour before shock took him. Maybe less.
+
+> **DIALOGUE: Sera Voss** *frantic*
+> "Pressure! I need pressure here! Nyx, get the med-kit! Elara, find something to cauterize with!"
 
 > **DIALOGUE: Kael Vance** *bleeding*
-> "Then we save them together. But not like this. Not by selling humanity to the highest bidder."
+> "No. We go after him. Now. Before he wakes something we can't put back to sleep."
 
 > **NARRATION**
-> Marcus hesitated. For one moment, the man Kael had trusted with his life looked back. Then the elevator doors closed.
-
-> **DIALOGUE: Elara Synn** *fierce*
-> "He's going to wake it up. Whatever's down there, Marcus is going to poke it with a corporate stick until it bites."
+> He stood. His own blood dripped down his thigh, pooling in his boot. Every step sent fresh pain screaming through his chest. He didn't care.
 
 > **NARRATION**
-> Kael pressed his hand against the wound. Blood seeped between his fingers. "Then we stop him. Or we die trying."
+> Marcus Thorne had been his friend. Had eaten at his table. Had laughed at his jokes. And now Kael was going to drag him back in chains or leave him dead in the ice. Those were the only options left.
 
 ## Choices
 

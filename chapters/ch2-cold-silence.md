@@ -31,6 +31,10 @@ type: story
   *Effects: courage +2*
   *Flavor: Something waits below. Something that doesn't want to be found.*
 
+- **Search the residential sector for survivors** → ch2-corpses
+  *Effects: courage +1, elaraTrust +1*
+  *Flavor: No one survived. But the dead have stories to tell.*
+
 - **Secure the command center first** → ch3-fortress-ice
   *Effects: leadership +1, marcusTrust +1*
   *Flavor: Protocol before curiosity. But Marcus is already hiding something.*

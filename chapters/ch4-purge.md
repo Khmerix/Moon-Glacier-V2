@@ -8,10 +8,10 @@ type: story
 ---
 
 > **NARRATION**
-> They ran. The team ran like they had never run before—up the bone-passage, through the pulsing dark, toward the cold promise of the surface.
+> They ran. The team ran like animals—up the meat-passage, through the pulsing dark, toward the cold promise of the surface. Behind them, the eggs were hatching. Not cracking. Opening. Like flowers.
 
 > **NARRATION**
-> Marcus planted the charges. Not standard issue—incendiary flechettes, white-phosphorus clusters, enough heat to glass a small city. Helix-issue. Of course.
+> Marcus planted the charges. Not standard issue—incendiary flechettes, white-phosphorus clusters, enough heat to glass a city block. Helix-issue. Of course.
 
 > **DIALOGUE: Marcus Thorne** *grim*
 > "Thirty seconds. Whatever that thing is, it burns like anything else."
@@ -20,16 +20,19 @@ type: story
 > They sealed the breach. Marcus triggered the detonator. The glacier screamed.
 
 > **NARRATION**
-> Not a metaphor. The ice screamed. A frequency that shattered windows two kilometers away. A sound that made Kael's nose bleed and Elara collapse to her knees, clutching her ears.
+> Not a metaphor. The ice screamed. A frequency that shattered Kael's nose and sent blood streaming down his face, that made Nyx collapse vomiting, that drove Elara to her knees clutching her ears as blood seeped between her fingers.
 
-> **DIALOGUE: Nyx Oriel** *terrified*
+> **NARRATION**
+> The heat was incredible. Even through the sealed blast doors, the temperature jumped forty degrees in seconds. Kael's jacket smoldered. His hair singed. He smelled cooking meat and knew it wasn't his.
+
+> **DIALOGUE: Nyx Oriel** *coughing blood*
 > "It felt that. It felt all of it. Commander, we didn't kill it. We just made it angry."
 
 > **NARRATION**
-> The glacier cracked. A fissure, ten kilometers long, split the surface. And from its depths, something vast and ancient began to rise.
+> The glacier cracked. A fissure, ten kilometers long, split the surface like a wound. And from its depths, something vast and ancient and bleeding light began to rise.
 
 > **DIALOGUE: Kael Vance** *resolute*
-> "Get to the transport. Now."
+> "Get to the transport. Now. Move!"
 
 ## Choices
 

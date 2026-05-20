@@ -54,7 +54,12 @@ const GlacierEngine = (function() {
         elara: { name: "Elara Synn", color: "#f472b6", avatar: "visuals/chars/elara.png", bio: "Xenobiologist" },
         nyx: { name: "Nyx Oriel", color: "#a78bfa", avatar: "visuals/chars/nyx.png", bio: "Pilot" },
         sera: { name: "Sera Voss", color: "#34d399", avatar: "visuals/chars/sera.png", bio: "Medic" },
-        entity: { name: "The Entity", color: "#d4af37", avatar: "", bio: "Ancient Consciousness" }
+        entity: { name: "The Entity", color: "#d4af37", avatar: "", bio: "Ancient Consciousness" },
+        voss: { name: "Director August Voss", color: "#ef4444", avatar: "", bio: "Helix Corp Xenological Division" },
+        tanaka: { name: "Captain Yuki Tanaka", color: "#a8a29e", avatar: "", bio: "UN Expedition Leader — Presumed Dead" },
+        fenwick: { name: "Dr. Silas Fenwick", color: "#84cc16", avatar: "", bio: "Outpost Geologist — Transformed" },
+        broker: { name: "Jace Kovacs", color: "#f97316", avatar: "", bio: "Black Market Supplier" },
+        echo: { name: "Echo-Seven", color: "#06b6d4", avatar: "", bio: "Pre-Collapse AI Construct" }
     };
 
     function init() {

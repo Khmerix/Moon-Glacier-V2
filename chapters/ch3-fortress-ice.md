@@ -41,6 +41,10 @@ type: story
   *Condition: { stat: { courage: 2 } }*
   *Flavor: Loyalty has a price. Today, it bleeds.*
 
+- **Investigate the sealed sub-level** → ch3-fenwick
+  *Effects: elaraTrust +1, courage +1*
+  *Flavor: Some doors are sealed for a reason. Some reasons are hungry.*
+
 - **Let him go and track him** → ch4-corporate-raid
   *Effects: leadership +2, marcusTrust -3*
   *Flavor: A live traitor is worth more than a dead one. For now.*

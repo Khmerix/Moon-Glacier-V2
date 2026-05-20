@@ -11,22 +11,34 @@ type: story
 > They came from the sky like vultures. Three Helix Corp drop-ships, black and unmarked, touching down in a triangle around the outpost. Not rescue. Occupation.
 
 > **NARRATION**
-> Marcus emerged from the lead ship, no longer pretending. He wore Helix black now, a comm-link glowing at his ear, a squad of corporate soldiers at his back.
+> The lead ship's ramp lowered with a hydraulic hiss. The man who descended wore a suit that cost more than the outpost itself. His smile was warm. His eyes were surgical instruments.
 
-> **DIALOGUE: Marcus Thorne** *hollow*
-> "I'm sorry, Kael. I really am. But Helix owns this moon now. They own the entity. They own everything beneath the ice. And they're offering you a choice."
+> **DIALOGUE: Director August Voss** *polite*
+> "Commander Vance. I've heard so much about you. My daughter speaks highly of your... leadership."
 
 > **NARRATION**
-> The soldiers raised their weapons. Not at the team. At the glacier. At the entity's spires, visible now, piercing the surface.
+> Sera went rigid. The color drained from her face like someone had pulled a plug.
 
-> **DIALOGUE: Helix Commander** *cold*
-> "Dr. Vance. Your xenobiological expertise is valuable. Cooperate, and your team lives. Resist, and we take what we need from your corpses."
+> **DIALOGUE: Sera Voss** *whispering*
+> "Dad. You sent me here. You knew. You knew what was on this moon and you sent me anyway."
 
-> **DIALOGUE: Nyx Oriel** *furious*
-> "You corporate bastards. You don't even know what it is, and you want to weaponize it?"
+> **DIALOGUE: Director August Voss** *shrugging*
+> "I sent you because you're the best xenobiologist in Helix's employ, sweetheart. I didn't send you to die. I sent you to succeed. The fact that you needed a military escort to do your job... well. That's on you."
 
-> **DIALOGUE: Helix Commander** *smiling*
-> "We weaponized the atom before we understood it. The entity is no different."
+> **NARRATION**
+> He turned to Kael, still smiling. "Now. My acquisition specialist—Marcus, is it?—has informed me that you've made first contact with a non-human intelligence. Helix is prepared to offer generous compensation for your cooperation."
+
+> **DIALOGUE: Kael Vance** *disgusted*
+> "Your 'acquisition specialist' tried to shoot me. Your daughter is terrified of you. And you want to talk compensation?"
+
+> **DIALOGUE: Director August Voss** *cold*
+> "I'm a businessman, Commander. Not a monster. The monster is beneath the ice. I'm merely the man with the resources to control it. You have two minutes to lower your weapons before I demonstrate what corporate security looks like in action."
+
+> **NARRATION**
+> The soldiers raised their rifles. Not at the team. At the glacier. At the entity's spires, visible now, piercing the surface.
+
+> **DIALOGUE: Director August Voss** *satisfied*
+> "Fire."
 
 ## Choices
 

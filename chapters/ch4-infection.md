@@ -8,28 +8,40 @@ type: story
 ---
 
 > **NARRATION**
-> The plasma bolts did nothing. The entity absorbed them, drinking the energy like sunlight. Then it moved. Fast. Too fast.
+> The plasma bolts did nothing. The entity absorbed them, drinking the energy like sunlight, and then it moved.
 
 > **NARRATION**
-> Elara didn't scream when it touched her. She sighed. Like relief. Like coming home after a long, cold journey.
+> It didn't walk. It flowed—a wet, muscular ripple of pale tissue and silver filament, crossing the chamber in less than a second. Elara didn't have time to scream.
 
 > **NARRATION**
-> "Elara!" Kael shouted. He grabbed her arm, pulled her back. Her skin was fever-hot, and beneath it, something silver moved. Veins of light, pulsing, spreading.
+> It touched her face. Not with hands—with tendrils, fine as surgical thread, that punched through her skin at the hairline and entered her skull with a sound like knitting needles through wet cardboard.
 
-> **DIALOGUE: Elara Synn** *transcendent*
-> "It's beautiful, Kael. It's not a parasite. It's a symbiote. It wants to share. It wants to make us... more."
+> **DIALOGUE: Elara Synn** *choking*
+> "It's—it's inside my head. I can feel it in my thoughts. Oh God, Kael, I can feel it reading me."
 
 > **NARRATION**
-> Her eyes were fully silver now. No whites. No pupils. Just liquid starlight.
+> Kael grabbed her arm to pull her back. Her skin was fever-hot, and beneath it, something moved. Not muscle. Not blood. Something that gleamed.
 
-> **DIALOGUE: Sera Voss** *horrified*
-> "The infection rate is exponential. In twelve hours, it'll reach her brainstem. In twenty-four, there won't be an Elara anymore."
+> **NARRATION**
+> The tendrils spread visibly—silver lines racing beneath her skin like roots in fast-forward, branching across her forehead, down her neck, into her chest. Where they passed, her skin split. Not bled. Split, like overripe fruit, revealing crystal growths that caught the light and threw it back in colors that made Kael's eyes water.
+
+> **DIALOGUE: Sera Voss** *dry-heaving*
+> "The infection rate... Jesus, it's not just exponential, it's intelligent. It's building something inside her. Using her bones as scaffolding."
+
+> **NARRATION**
+> Elara's left eye rolled back. The right eye stayed fixed on Kael, weeping silver fluid that hardened into teardrop-shaped crystals on her cheek.
+
+> **DIALOGUE: Elara Synn** *two voices*
+> "We're not dying, Commander. We're being translated. Upgraded. Would you burn a caterpillar for becoming a butterfly?"
+
+> **NARRATION**
+> Her jaw unhinged. Not broke—unhinged, like a snake's, the mandible separating at the joint to accommodate something growing in her throat. Something that pulsed with its own bioluminescence.
 
 > **DIALOGUE: Kael Vance** *torn*
-> "Is she still in there? Elara, if you can hear me—fight it."
+> "Elara, if you're still in there—fight it. Please. Fight it."
 
 > **NARRATION**
-> Elara smiled. It was her smile. And it wasn't. "I'm not fighting, Commander. I'm finally awake."
+> She smiled. It was Elara's smile. And it had too many teeth.
 
 ## Choices
 
