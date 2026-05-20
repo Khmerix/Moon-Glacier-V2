@@ -34,6 +34,6 @@ type: story
   *Effects: leadership +2, alienAffinity +1*
   *Flavor: Words before weapons. The entity's form brightens.*
 
-- **Ask about the previous civilization** → ch5-awakening
+- **Ask about the previous civilization** → ch5-the-price
   *Effects: tech +1, leadership +1*
-  *Flavor: History is a weapon. The entity considers your question for a thousand years.*
+  *Flavor: History is a weapon. And the answer will cost you everything.*

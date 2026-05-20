@@ -28,6 +28,6 @@ type: story
   *Effects: courage +2, alienAffinity +2*
   *Flavor: The oldest choice in the universe: reach out, or run.*
 
-- **Take crystal samples and retreat** → ch4-first-contact
-  *Effects: tech +2*
-  *Flavor: Knowledge first. But the darkness moves closer while you work.*
+- **Take crystal samples and retreat** → ch4-the-signal
+  *Effects: tech +2, elaraTrust +1*
+  *Flavor: Knowledge first. But some signals should never be answered.*

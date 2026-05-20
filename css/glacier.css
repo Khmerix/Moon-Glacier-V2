@@ -927,3 +927,126 @@ body::after { display: none; }
 ::-webkit-scrollbar-thumb:hover {
     background: var(--ice-primary);
 }
+
+/* ===== DRAMATIC VISUAL EFFECTS ===== */
+
+/* Screen Shake — betrayal, explosions */
+.screen-shake {
+    animation: screen-shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+@keyframes screen-shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+/* Fog Overlay — ice caverns, biological horror */
+.fog-overlay::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 9995;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 50% 100%, rgba(200,220,240,0.08) 0%, transparent 60%);
+    animation: fog-drift 8s ease-in-out infinite alternate;
+}
+@keyframes fog-drift {
+    0% { opacity: 0.3; transform: translateY(0); }
+    100% { opacity: 0.6; transform: translateY(-20px); }
+}
+
+/* Lightning Flash — storms, electrical */
+.lightning-flash {
+    animation: lightning 4s infinite;
+}
+@keyframes lightning {
+    0%, 90%, 100% { filter: brightness(1); }
+    92% { filter: brightness(1.3) contrast(1.1); }
+    93% { filter: brightness(1); }
+    95% { filter: brightness(1.4) contrast(1.2); }
+    96% { filter: brightness(1); }
+}
+
+/* Blood Tint — injury, danger, infection */
+.blood-tint::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 9995;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(180,20,20,0.12) 0%, transparent 70%);
+    mix-blend-mode: multiply;
+}
+
+/* Pulse Glow — entity communication, transcendence */
+.pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+    0%, 100% { filter: brightness(1) saturate(1); }
+    50% { filter: brightness(1.15) saturate(1.2); }
+}
+
+/* ===== ENHANCED ENDING BADGES ===== */
+.ending-badge {
+    position: relative;
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+    margin: 24px 0;
+    overflow: hidden;
+    border: 2px solid;
+    backdrop-filter: blur(12px);
+}
+
+.ending-badge.gold {
+    background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,165,0,0.05));
+    border-color: rgba(255,215,0,0.4);
+    box-shadow: 0 0 40px rgba(255,215,0,0.15), inset 0 0 60px rgba(255,215,0,0.05);
+}
+.ending-badge.gold h2 {
+    color: #ffd700;
+    text-shadow: 0 0 20px rgba(255,215,0,0.4);
+}
+
+.ending-badge.silver {
+    background: linear-gradient(135deg, rgba(192,192,192,0.1), rgba(169,169,169,0.05));
+    border-color: rgba(192,192,192,0.4);
+    box-shadow: 0 0 40px rgba(192,192,192,0.15), inset 0 0 60px rgba(192,192,192,0.05);
+}
+.ending-badge.silver h2 {
+    color: #c0c0c0;
+    text-shadow: 0 0 20px rgba(192,192,192,0.4);
+}
+
+.ending-badge.bronze {
+    background: linear-gradient(135deg, rgba(205,127,50,0.1), rgba(139,90,43,0.05));
+    border-color: rgba(205,127,50,0.4);
+    box-shadow: 0 0 40px rgba(205,127,50,0.15), inset 0 0 60px rgba(205,127,50,0.05);
+}
+.ending-badge.bronze h2 {
+    color: #cd7f32;
+    text-shadow: 0 0 20px rgba(205,127,50,0.4);
+}
+
+.ending-badge .badge-content h2 {
+    font-size: 1.4rem;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+}
+
+.ending-badge .badge-content p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* ===== BREATHING BORDER (existing enhancement) ===== */
+.breathing-border {
+    animation: breathe 4s ease-in-out infinite;
+}
+@keyframes breathe {
+    0%, 100% { box-shadow: 0 0 10px var(--glass-glow); }
+    50% { box-shadow: 0 0 25px var(--glass-glow), 0 0 40px var(--glass-glow); }
+}

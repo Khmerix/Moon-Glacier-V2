@@ -4,7 +4,7 @@ title: "The Awakening"
 location: "Outpost Erebus — Transformation"
 time: "Cycle 1, Hour 12"
 image: visuals/ch5/awakening.png
-type: story
+type: ending
 ---
 
 > **NARRATION**
@@ -33,10 +33,11 @@ type: story
 
 ## Choices
 
-- **Begin the learning protocol** → ch1-ice-frontier
-  *Effects: courage +1, leadership +1, alienAffinity +1*
-  *Flavor: The spires sing. Humanity's second chapter begins.*
+- **Accept the gift humbly** → ending-enlightenment
+  *Effects: leadership +2, alienAffinity +2*
+  *Flavor: The spires sing. Humanity's second chapter begins in harmony.*
 
-- **To be continued...** → ch1-ice-frontier
-  *Effects: none*
-  *Flavor: End of current arc. More to come.*
+- **Demand control of the technology** → ending-tyrant
+  *Effects: courage +2, alienAffinity -2*
+  *Condition: { stat: { courage: 3 } }*
+  *Flavor: Power unchecked becomes a prison. The entity's light dims.*

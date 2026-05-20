@@ -31,6 +31,6 @@ type: story
   *Effects: courage +2*
   *Flavor: Something waits below. Something that doesn't want to be found.*
 
-- **Secure the command center first** → ch3-deep-vein
-  *Effects: leadership +1*
-  *Flavor: Protocol before curiosity. The team holds position.*
+- **Secure the command center first** → ch3-fortress-ice
+  *Effects: leadership +1, marcusTrust +1*
+  *Flavor: Protocol before curiosity. But Marcus is already hiding something.*

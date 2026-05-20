@@ -14,9 +14,37 @@ const GlacierEngine = (function() {
     const CHAPTER_THEMES = {
         'ch1-ice-frontier': 'theme-ice',
         'ch2-cold-silence': 'theme-silence',
+        'ch2-storm-surge': 'theme-silence',
         'ch3-deep-vein': 'theme-deep',
+        'ch3-fortress-ice': 'theme-ice',
+        'ch3-the-breach': 'theme-deep',
+        'ch3-whiteout': 'theme-silence',
         'ch4-first-contact': 'theme-contact',
-        'ch5-awakening': 'theme-awakening'
+        'ch4-the-signal': 'theme-contact',
+        'ch4-betrayal': 'theme-silence',
+        'ch4-corporate-raid': 'theme-silence',
+        'ch4-infection': 'theme-contact',
+        'ch4-purge': 'theme-silence',
+        'ch4-ghost-tracks': 'theme-deep',
+        'ch4-buried': 'theme-ice',
+        'ch5-awakening': 'theme-awakening',
+        'ch5-the-price': 'theme-contact',
+        'ch5-transcendence': 'theme-contact',
+        'ch5-severance': 'theme-awakening',
+        'ch5-hollow': 'theme-silence'
+    };
+
+    // Dramatic visual effects per chapter
+    const CHAPTER_EFFECTS = {
+        'ch2-storm-surge': 'lightning-flash',
+        'ch3-the-breach': 'fog-overlay',
+        'ch4-betrayal': 'screen-shake',
+        'ch4-corporate-raid': 'screen-shake',
+        'ch4-infection': 'blood-tint',
+        'ch4-purge': 'screen-shake',
+        'ch4-buried': 'blood-tint',
+        'ch5-the-price': 'pulse-glow',
+        'ch5-transcendence': 'pulse-glow'
     };
 
     // Character definitions (loaded from lore/characters.md or hardcoded fallback)
@@ -61,6 +89,13 @@ const GlacierEngine = (function() {
         const chromatic = document.getElementById('chromatic');
         if (chromatic) {
             chromatic.classList.toggle('active', themeClass === 'theme-contact' || themeClass === 'theme-awakening');
+        }
+        // Apply/remove dramatic visual effects
+        const effects = ['screen-shake', 'fog-overlay', 'lightning-flash', 'blood-tint', 'pulse-glow'];
+        effects.forEach(eff => document.body.classList.remove(eff));
+        const effect = CHAPTER_EFFECTS[chapterId];
+        if (effect) {
+            document.body.classList.add(effect);
         }
     }
 
@@ -376,14 +411,25 @@ const GlacierEngine = (function() {
     }
 
     function renderEndingBadge(tier) {
+        const tierLabels = {
+            gold: '★ GOLD ENDING ★',
+            silver: '☆ SILVER ENDING ☆',
+            bronze: '● BRONZE ENDING ●'
+        };
+        const tierDesc = {
+            gold: 'You found the best possible outcome. Humanity and the entity thrive together.',
+            silver: 'A difficult path with meaningful sacrifice. The future is uncertain but hopeful.',
+            bronze: 'Survival at a cost. Some doors, once closed, never open again.'
+        };
         const badge = document.createElement('div');
         badge.className = `ending-badge ${tier}`;
         badge.innerHTML = `
             <div class="badge-glow"></div>
             <div class="badge-content">
-                <h2>${tier.toUpperCase()} ENDING</h2>
-                <p>Unlocked ${new Date().toLocaleDateString()}</p>
-                <p style="font-size:0.8rem;margin-top:8px;opacity:0.7">Reset to explore other branches</p>
+                <h2>${tierLabels[tier] || tier.toUpperCase() + ' ENDING'}</h2>
+                <p>${tierDesc[tier] || 'The story concludes.'}</p>
+                <p style="font-size:0.75rem;margin-top:12px;opacity:0.6">Unlocked ${new Date().toLocaleDateString()} • ${Object.keys(GlacierState.get().endingsSeen || {}).length || 0} endings discovered</p>
+                <p style="font-size:0.8rem;margin-top:16px;opacity:0.8;font-style:italic;">Reset from the menu to explore other branches</p>
             </div>
         `;
         dom.storyContent.appendChild(badge);

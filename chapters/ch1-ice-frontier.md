@@ -31,6 +31,6 @@ type: story
   *Effects: courage +1*
   *Flavor: The transport drops like a stone through the storm. No turning back.*
 
-- **Request alternate landing zone** → ch2-cold-silence
-  *Effects: tech +1*
-  *Flavor: Safer approach, but every second costs lives.*
+- **Request alternate landing zone** → ch2-storm-surge
+  *Effects: tech +1, nyxTrust +1*
+  *Flavor: Safer approach, but the storm has other plans.*
